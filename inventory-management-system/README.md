@@ -1,11 +1,129 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
-
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  <a href="https://laravel.com" target="_blank">
+    <img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo">
+  </a>
+  <h1 align="center">Inventory Management System</h1>
+  <p align="center">A comprehensive Laravel-based inventory management solution</p>
+  
+  <p align="center">
+    <a href="#features">Features</a> •
+    <a href="#prerequisites">Prerequisites</a> •
+    <a href="#installation">Installation</a> •
+    <a href="#usage">Usage</a>
+  </p>
 </p>
+
+## Features
+
+- **Multi-User Role System** (Admin, Manager, Staff)
+- **Product Management** - Track inventory items with categories
+- **Customer Management** - Maintain customer records and order history
+- **Supplier Management** - Manage suppliers and their products
+- **Purchase Orders** - Record and track inventory purchases
+- **Sales Management** - Process and track customer sales
+- **Order Management** - Manage customer orders and order statuses
+- **Dashboard** - Visual overview of key metrics and reports
+- **Low Stock Alerts** - Get notified when inventory runs low
+
+## Prerequisites
+
+- PHP >= 8.1
+- Composer
+- MySQL 5.7+ or MariaDB 10.3+
+- Node.js 14+ & NPM
+- Web server (Apache/Nginx) or PHP's built-in server
+
+## Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/inventory-management-system.git
+   cd inventory-management-system
+   ```
+
+2. **Install PHP dependencies**
+   ```bash
+   composer install
+   ```
+
+3. **Install JavaScript dependencies**
+   ```bash
+   npm install
+   ```
+
+4. **Create environment file**
+   ```bash
+   cp .env.example .env
+   ```
+
+5. **Generate application key**
+   ```bash
+   php artisan key:generate
+   ```
+
+6. **Configure database**
+   Update `.env` file with your database credentials:
+   ```
+   DB_CONNECTION=mysql
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_DATABASE=inventory
+   DB_USERNAME=root
+   DB_PASSWORD=
+   ```
+
+7. **Run migrations and seed the database**
+   ```bash
+   php artisan migrate --seed
+   ```
+   This will create the database tables and seed them with sample data.
+
+8. **Link storage**
+   ```bash
+   php artisan storage:link
+   ```
+
+9. **Compile assets**
+   ```bash
+   npm run build
+   ```
+
+10. **Start the development server**
+    ```bash
+    php artisan serve
+    ```
+
+## Usage
+
+1. Access the application at `http://localhost:8000`
+2. Login using the default credentials:
+   - **Admin**
+     - Email: admin@example.com
+     - Password: password
+   - **Manager**
+     - Email: manager@example.com
+     - Password: password
+   - **Staff**
+     - Email: staff@example.com
+     - Password: password
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## Security Vulnerabilities
+
+If you discover a security vulnerability, please send an email to your-email@example.com. All security vulnerabilities will be promptly addressed.
+
+## License
+
+This project is open-sourced under the [MIT license](https://opensource.org/licenses/MIT).
+
+## About Laravel
 
 ## About Laravel
 
@@ -18,6 +136,10 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 - Database agnostic [schema migrations](https://laravel.com/docs/migrations).
 - [Robust background job processing](https://laravel.com/docs/queues).
 - [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+
+---
+
+*This project was developed using Laravel. For more information about the framework, visit the [official Laravel documentation](https://laravel.com/docs).*
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
