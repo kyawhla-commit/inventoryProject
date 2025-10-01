@@ -7,7 +7,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2>{{ __('Raw Material Usage Tracking') }}</h2>
                 <div>
-                    <a href="{{ route('raw-material-usages.bulk-create') }}" class="btn btn-info me-2">
+                    <a href="{{ route('raw-material-usages.bulk-create-test') }}" class="btn btn-info me-2">
                         <i class="fas fa-layer-group"></i> {{ __('Bulk Record Usage') }}
                     </a>
                     <a href="{{ route('raw-material-usages.create') }}" class="btn btn-primary">

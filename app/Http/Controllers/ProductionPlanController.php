@@ -122,8 +122,14 @@ class ProductionPlanController extends Controller
         ]);
 
         $materialRequirements = $productionPlan->calculateMaterialRequirements();
+        
+        // Get material usage records for this production plan
+        $materialUsages = RawMaterialUsage::where('batch_number', $productionPlan->plan_number)
+            ->with(['rawMaterial', 'product', 'recordedBy'])
+            ->orderBy('usage_date', 'desc')
+            ->get();
 
-        return view('production-plans.show', compact('productionPlan', 'materialRequirements'));
+        return view('production-plans.show', compact('productionPlan', 'materialRequirements', 'materialUsages'));
     }
 
     public function edit(ProductionPlan $productionPlan)
@@ -336,15 +342,17 @@ class ProductionPlanController extends Controller
         $requirements = $productionPlan->calculateMaterialRequirements();
         
         // Check availability
-        $requirements = $requirements->map(function ($requirement) {
+        $requirements = collect($requirements)->map(function ($requirement) {
             $rawMaterial = RawMaterial::find($requirement['raw_material_id']);
             $requirement['available_quantity'] = $rawMaterial->quantity;
             $requirement['shortage'] = max(0, $requirement['total_required'] - $rawMaterial->quantity);
             $requirement['is_sufficient'] = $rawMaterial->quantity >= $requirement['total_required'];
             return $requirement;
         });
+        // Get all available raw materials for additional usage
+        $availableRawMaterials = RawMaterial::where('quantity', '>', 0)->get();
 
-        return view('production-plans.material-requirements', compact('productionPlan', 'requirements'));
+        return view('production-plans.material-requirements', compact('productionPlan', 'requirements', 'availableRawMaterials'));
     }
 
     public function recordActualUsage(ProductionPlan $productionPlan, Request $request)

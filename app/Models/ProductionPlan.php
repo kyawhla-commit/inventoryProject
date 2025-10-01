@@ -51,28 +51,45 @@ class ProductionPlan extends Model
         return $this->belongsTo(User::class, 'approved_by');
     }
 
+    /**
+     * Calculate the raw material requirements for this production plan
+     *
+     * @return array
+     */
     public function calculateMaterialRequirements()
     {
-        $requirements = collect();
+        $requirements = [];
         
-        foreach ($this->productionPlanItems as $planItem) {
-            if ($planItem->recipe) {
-                $itemRequirements = $planItem->recipe->calculateMaterialRequirements($planItem->planned_quantity);
+        foreach ($this->productionPlanItems as $item) {
+            $product = $item->product;
+            $quantity = $item->quantity;
+            
+            // Get raw materials for this product
+            $productRawMaterials = $product->rawMaterials;
+            
+            foreach ($productRawMaterials as $rawMaterial) {
+                $pivot = $rawMaterial->pivot;
+                $requiredQuantity = $pivot->quantity_required * $quantity;
                 
-                foreach ($itemRequirements as $requirement) {
-                    $existing = $requirements->firstWhere('raw_material_id', $requirement['raw_material_id']);
-                    
-                    if ($existing) {
-                        $requirements = $requirements->map(function ($item) use ($requirement) {
-                            if ($item['raw_material_id'] === $requirement['raw_material_id']) {
-                                $item['total_required'] += $requirement['total_required'];
-                                $item['estimated_cost'] += $requirement['estimated_cost'];
-                            }
-                            return $item;
-                        });
-                    } else {
-                        $requirements->push($requirement);
+                // If this raw material is already in requirements, add to it
+                $found = false;
+                foreach ($requirements as &$req) {
+                    if ($req['raw_material_id'] == $rawMaterial->id) {
+                        $req['quantity_required'] += $requiredQuantity;
+                        $found = true;
+                        break;
                     }
+                }
+                
+                // If not found, add new requirement
+                if (!$found) {
+                    $requirements[] = [
+                        'raw_material_id' => $rawMaterial->id,
+                        'raw_material_name' => $rawMaterial->name,
+                        'quantity_required' => $requiredQuantity,
+                        'unit' => $rawMaterial->unit,
+                        'available' => $rawMaterial->quantity,
+                    ];
                 }
             }
         }

@@ -7,12 +7,22 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">Production Plans</h4>
+
+                    <a href="{{ route('production-plans.create') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Production Plan
+                    </a>
                     <div>
                         <a href="{{ route('production-plans.dashboard') }}" class="btn btn-info">
                             <i class="fas fa-chart-line"></i> Dashboard
                         </a>
                         <a href="{{ route('production-plans.create') }}" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Create Production Plan
+                            <i class="fas fa-plus"></i> New Plan
+                        </a>
+                        <a href="{{ route('raw-material-usages.index') }}" class="btn btn-success">
+                            <i class="fas fa-boxes"></i> Material Usage
+                        </a>
+                        <a href="{{ route('raw-material-usages.efficiency') }}" class="btn btn-info">
+                            <i class="fas fa-chart-line"></i> Material Efficiency
                         </a>
                     </div>
                 </div>
@@ -59,6 +69,7 @@
                                     <th>Actual Cost</th>
                                     <th>Created By</th>
                                     <th>Actions</th>
+                                    <th>Material Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -118,10 +129,26 @@
                                                 @endif
                                             </div>
                                         </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ route('raw-material-usages.create', ['batch_number' => $plan->plan_number]) }}" 
+                                                   class="btn btn-sm btn-primary" title="Record Material Usage">
+                                                    <i class="fas fa-clipboard-list"></i>
+                                                </a>
+                                                <a href="{{ route('raw-material-usages.bulk-create', ['batch_number' => $plan->plan_number]) }}" 
+                                                   class="btn btn-sm btn-warning" title="Bulk Record Materials">
+                                                    <i class="fas fa-layer-group"></i>
+                                                </a>
+                                                <a href="{{ route('production-plans.material-requirements', $plan) }}" 
+                                                   class="btn btn-sm btn-info" title="View Material Requirements">
+                                                    <i class="fas fa-list-check"></i>
+                                                </a>
+                                            </div>
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="9" class="text-center">No production plans found</td>
+                                        <td colspan="10" class="text-center">No production plans found</td>
                                     </tr>
                                 @endforelse
                             </tbody>
