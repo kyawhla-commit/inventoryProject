@@ -1,0 +1,10 @@
+.lazy-load {
+    opacity: 0;
+    transition: opacity 0.3s ease-in;
+
+}
+
+.lazy-load.loaded {
+    opacity: 1;
+
+}

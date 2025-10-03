@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductionPlan extends Model
 {
@@ -49,6 +50,11 @@ class ProductionPlan extends Model
     public function approvedBy()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function rawMaterialUsages()
+    {
+        return $this->hasMany(RawMaterialUsage::class, 'production_plan_id');
     }
 
     /**

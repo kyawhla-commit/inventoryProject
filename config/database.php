@@ -171,4 +171,27 @@ return [
 
     ],
 
+    'cache_store' => [
+    'driver' => 'mysql',
+    'url' => env('CACHE_DATABASE_URL'),
+    'host' => env('CACHE_DB_HOST', '127.0.0.1'),
+    'port' => env('CACHE_DB_PORT', '3306'),
+    'database' => env('CACHE_DB_DATABASE', 'forge'),
+    'username' => env('CACHE_DB_USERNAME', 'forge'),
+    'password' => env('CACHE_DB_PASSWORD', ''),
+    'unix_socket' => env('CACHE_DB_SOCKET', ''),
+    'charset' => 'utf8mb4',
+    'collation' => 'utf8mb4_unicode_ci',
+    'prefix' => '',
+    'prefix_indexes' => true,
+    'strict' => false, // Less strict for better performance
+    'engine' => 'InnoDB ROW_FORMAT=COMPRESSED',
+    'options' => extension_loaded('pdo_mysql') ? array_filter([
+        PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+        PDO::MYSQL_ATTR_COMPRESS => true, // Enable compression
+    ]) : [],
+],
+
 ];
+
+

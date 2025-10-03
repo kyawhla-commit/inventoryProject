@@ -267,11 +267,12 @@
     </div>
 
     <!-- Stock Movements -->
+    <!-- After the Efficiency Metrics section and before the Top Products section -->
     <div class="row mb-4">
         <div class="col-md-12">
-            <div class="card" id="stock-movements">
+            <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-boxes"></i> Stock Movement Analysis</h5>
+                    <h5 class="mb-0"><i class="fas fa-exchange-alt"></i> Real-Time Stock Movement</h5>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -279,11 +280,12 @@
                             <thead>
                                 <tr>
                                     <th>Product</th>
-                                    <th class="text-end">Produced</th>
+                                    <th class="text-end">Initial Stock</th>
+                                    <th class="text-end">Production (+)</th>
+                                    <th class="text-end">Orders (-)</th>
                                     <th class="text-end">Current Stock</th>
-                                    <th class="text-end">Min. Stock</th>
-                                    <th class="text-end">Coverage</th>
                                     <th>Status</th>
+                                    <th>Trend</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -291,22 +293,20 @@
                                     <tr>
                                         <td>
                                             <strong>{{ $movement['product']->name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ $movement['product']->unit }}</small>
                                         </td>
                                         <td class="text-end">
-                                            {{ number_format($movement['produced_quantity'], 2) }} {{ $movement['product']->unit }}
+                                            {{ number_format($movement['initial_stock']?? 0, 2) }}
                                         </td>
-                                        <td class="text-end">
+                                        <td class="text-end text-success">
+                                            +{{ number_format($movement['produced_quantity'], 2) }}
+                                        </td>
+                                        <td class="text-end text-danger">
+                                            -{{ number_format($movement['ordered_quantity'] ?? 0, 2) }}
+                                        </td>
+                                        <td class="text-end fw-bold">
                                             {{ number_format($movement['current_stock'], 2) }}
-                                        </td>
-                                        <td class="text-end">
-                                            {{ number_format($movement['minimum_stock'], 2) }}
-                                        </td>
-                                        <td class="text-end">
-                                            @if($movement['stock_coverage_days'])
-                                                {{ $movement['stock_coverage_days'] }} days
-                                            @else
-                                                <span class="text-muted">N/A</span>
-                                            @endif
                                         </td>
                                         <td>
                                             @switch($movement['stock_status'])
@@ -323,10 +323,19 @@
                                                     <span class="badge bg-success">Normal</span>
                                             @endswitch
                                         </td>
+                                        <td>
+    @if(($movement['stock_trend'] ?? 0) > 0)
+        <span class="text-success"><i class="fas fa-arrow-up"></i> Increasing</span>
+    @elseif(($movement['stock_trend'] ?? 0) < 0)
+        <span class="text-danger"><i class="fas fa-arrow-down"></i> Decreasing</span>
+    @else
+        <span class="text-secondary"><i class="fas fa-minus"></i> Stable</span>
+    @endif
+</td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="text-center text-muted">No stock movements in this period</td>
+                                        <td colspan="7" class="text-center text-muted">No stock movements in this period</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -336,6 +345,91 @@
             </div>
         </div>
     </div>
+
+    <!-- Add this after the Stock Movements section -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-balance-scale"></i> Production vs. Orders Analysis</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th class="text-end">Production Rate</th>
+                                <th class="text-end">Order Rate</th>
+                                <th class="text-end">Balance</th>
+                                <th>Status</th>
+                                <th>Recommendation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+    @forelse($stockMovements as $movement)
+        @php
+            $producedQuantity = $movement['produced_quantity'] ?? 0;
+            $orderedQuantity = $movement['ordered_quantity'] ?? 0;
+            
+            $productionRate = $producedQuantity > 0 ? 
+                $producedQuantity / (strtotime($endDate) - strtotime($startDate)) * 86400 : 0;
+            
+            $orderRate = $orderedQuantity > 0 ? 
+                $orderedQuantity / (strtotime($endDate) - strtotime($startDate)) * 86400 : 0;
+            
+            $balance = $productionRate - $orderRate;
+            
+            if ($balance > 0.1) {
+                $status = 'surplus';
+                $statusClass = 'success';
+                $recommendation = 'Consider reducing production or increasing marketing';
+            } elseif ($balance < -0.1) {
+                $status = 'deficit';
+                $statusClass = 'danger';
+                $recommendation = 'Increase production to meet demand';
+            } else {
+                $status = 'balanced';
+                $statusClass = 'info';
+                $recommendation = 'Production matches demand';
+            }
+        @endphp
+        <tr>
+            <td>
+                <strong>{{ $movement['product']->name ?? 'N/A' }}</strong>
+                <br>
+                <small class="text-muted">{{ $movement['product']->unit ?? '' }}</small>
+            </td>
+            <td class="text-end">
+                {{ number_format($productionRate, 2) }} / day
+            </td>
+            <td class="text-end">
+                {{ number_format($orderRate, 2) }} / day
+            </td>
+            <td class="text-end {{ $balance >= 0 ? 'text-success' : 'text-danger' }}">
+                {{ $balance >= 0 ? '+' : '' }}{{ number_format($balance, 2) }} / day
+            </td>
+            <td>
+                <span class="badge bg-{{ $statusClass }}">
+                    {{ ucfirst($status) }}
+                </span>
+            </td>
+            <td>
+                <small>{{ $recommendation }}</small>
+            </td>
+        </tr>
+    @empty
+        <tr>
+            <td colspan="6" class="text-center text-muted">No data available for analysis</td>
+        </tr>
+    @endforelse
+</tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
     <!-- Products Produced Details -->
     <div class="row mb-4">

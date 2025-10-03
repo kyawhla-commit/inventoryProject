@@ -96,9 +96,9 @@ class Order extends Model
             ]);
 
             // Update product stock
-            if ($orderItem->product) {
-                $orderItem->product->decrement('quantity', $orderItem->quantity);
-            }
+            // if ($orderItem->product) {
+            //     $orderItem->product->decrement('quantity', $orderItem->quantity);
+            // }
         }
 
         return $sale;

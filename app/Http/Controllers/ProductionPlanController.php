@@ -269,29 +269,31 @@ class ProductionPlanController extends Controller
             ->with('success', 'Production plan started successfully.');
     }
 
+
     public function complete(ProductionPlan $productionPlan)
     {
         if ($productionPlan->status !== 'in_progress') {
-            return redirect()->route('production-plans.show', $productionPlan)
+            return redirect()->back()
                 ->with('error', 'Only in-progress plans can be completed.');
         }
 
         $updatedProducts = [];
 
-        DB::transaction(function () use ($productionPlan, &$updatedProducts) {
+        try {
+            DB::beginTransaction();
+    
             // Reload to get fresh data
             $productionPlan->load('productionPlanItems.product');
-
+    
             // Update production plan status
-            $productionPlan->update([
-                'status' => 'completed',
-                'actual_end_date' => now(),
-            ]);
-
+            $productionPlan->status = 'completed';
+            $productionPlan->actual_end_date = now();
+            $productionPlan->save();
+    
             // Add produced quantities to products
             foreach ($productionPlan->productionPlanItems as $planItem) {
-                // Use actual_quantity if available, otherwise use planned_quantity
-                $quantityToAdd = $planItem->actual_quantity ?? $planItem->planned_quantity;
+                // Always use planned_quantity as actual_quantity when completing
+                $quantityToAdd = $planItem->planned_quantity;
                 
                 if ($quantityToAdd > 0 && $planItem->product) {
                     // Get current stock before update
@@ -312,30 +314,37 @@ class ProductionPlanController extends Controller
                         'new_stock' => $newStock,
                     ];
                     
-                    // Update plan item status
-                    $planItem->update([
-                        'status' => 'completed',
-                        'actual_quantity' => $quantityToAdd,
-                        'actual_end_date' => now(),
-                    ]);
+                    // Update plan item status and set actual_quantity equal to planned_quantity
+                    $planItem->status = 'completed';
+                    $planItem->actual_quantity = $quantityToAdd;
+                    $planItem->actual_end_date = now();
+                    $planItem->save();
                 }
             }
-        });
-
-        // Create detailed success message
-        $message = 'Production plan completed successfully! Stock updated for ' . count($updatedProducts) . ' product(s):';
-        foreach ($updatedProducts as $product) {
-            $message .= sprintf(
-                " %s (+%s, now %s)",
-                $product['name'],
-                number_format($product['added'], 2),
-                number_format($product['new_stock'], 2)
-            );
+    
+            DB::commit();
+    
+            // Create detailed success message
+            $message = 'Production plan completed successfully! Stock updated for ' . count($updatedProducts) . ' product(s):';
+            foreach ($updatedProducts as $product) {
+                $message .= sprintf(
+                    " %s (+%s, now %s)",
+                    $product['name'],
+                    number_format($product['added'], 2),
+                    number_format($product['new_stock'], 2)
+                );
+            }
+    
+            return redirect()->route('production-plans.show', $productionPlan)
+                ->with('success', $message);
+    
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->with('error', 'Failed to complete production plan: ' . $e->getMessage());
         }
-
-        return redirect()->route('production-plans.show', $productionPlan)
-            ->with('success', $message);
     }
+    
 
     public function materialRequirements(ProductionPlan $productionPlan)
     {
@@ -344,9 +353,13 @@ class ProductionPlanController extends Controller
         // Check availability
         $requirements = collect($requirements)->map(function ($requirement) {
             $rawMaterial = RawMaterial::find($requirement['raw_material_id']);
+            
+            // Add default value if key doesn't exist
+            $totalRequired = $requirement['total_required'] ?? 0;
+            
             $requirement['available_quantity'] = $rawMaterial->quantity;
-            $requirement['shortage'] = max(0, $requirement['total_required'] - $rawMaterial->quantity);
-            $requirement['is_sufficient'] = $rawMaterial->quantity >= $requirement['total_required'];
+            $requirement['shortage'] = max(0, $totalRequired - $rawMaterial->quantity);
+            $requirement['is_sufficient'] = $rawMaterial->quantity >= $totalRequired;
             return $requirement;
         });
         // Get all available raw materials for additional usage

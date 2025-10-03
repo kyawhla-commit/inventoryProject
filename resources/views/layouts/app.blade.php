@@ -5,6 +5,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
     <link rel="stylesheet" href="{{ asset('css/theme.css') }}">
+    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    @stack('styles')
     
     <style>
         :root {
@@ -711,12 +713,18 @@
 
                     <div class="nav-section">
                         <div class="nav-section-title">{{ __('Reports') }}</div>
+                        <a class="nav-item-custom {{ request()->routeIs('production-costs.*') ? 'active' : '' }}" href="{{ route('production-costs.dashboard') }}">
+        <i class="fas fa-chart-line"></i>
+        {{ __('Cost Analysis') }}
+        
+    </a>
                         <a href="{{ route('reports.index') }}" class="nav-item-custom {{ request()->routeIs('reports.*') ? 'active' : '' }}">
                             <i class="fas fa-chart-bar"></i>{{ __('Reports') }}
                         </a>
                         <a href="{{ route('profit-loss.index') }}" class="nav-item-custom {{ request()->routeIs('profit-loss.*') ? 'active' : '' }}">
                             <i class="fas fa-calculator"></i>{{ __('Profit & Loss') }}
                         </a>
+                        
                     </div>
                     @endif
                 @endauth

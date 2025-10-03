@@ -22,6 +22,7 @@
     use App\Http\Controllers\ProductionMaterialUsageController;
     use App\Http\Controllers\StaffController;
     use App\Http\Controllers\ProductRawMaterialController;
+    use App\Http\Controllers\ProductionCostController;
     use Illuminate\Support\Facades\Auth;
 
     Auth::routes();
@@ -243,5 +244,16 @@
             'files' => $request->hasFile('profile_photo') ? 'Has file' : 'No file',
         ]);
     })->name('debug.staff.store');
+
+    Route::middleware(['auth'])->group(function () {
+        // Production Cost Routes
+        Route::get('/production-costs/dashboard', [ProductionCostController::class, 'dashboard'])
+            ->name('production-costs.dashboard');
+            Route::get('/production-cost', [ProductionCostController::class, 'index']);
+        Route::get('/production-costs/{productionPlan}', [ProductionCostController::class, 'show'])
+            ->name('production-costs.show');
+        Route::post('/production-costs/{productionPlan}/update-actual', [ProductionCostController::class, 'updateActualCosts'])
+            ->name('production-costs.update-actual');
+    });
 
 
