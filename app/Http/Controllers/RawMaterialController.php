@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Purchase;
 use Illuminate\Http\Request;
 use App\Models\RawMaterial;
 use App\Models\Supplier;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\StockMovement;
 
 class RawMaterialController extends Controller
 {
