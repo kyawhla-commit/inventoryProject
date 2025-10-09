@@ -92,34 +92,6 @@ class ProductionDashboardController extends Controller
         $costVariancePercentage = $totalEstimatedCost > 0 ? ($costVariance / $totalEstimatedCost) * 100 : 0;
 
         // Products Produced with Stock Levels
-
-        $productsProduced = ProductionPlanItem::with(['product'])
-            ->whereHas('productionPlan', function($query) use ($startDate, $endDate) {
-                $query->where('status', 'completed')
-                      ->whereBetween('actual_end_date', [$startDate, $endDate]);
-            })
-            ->get()
-            ->groupBy('product_id')
-            ->map(function ($items) {
-                $product = $items->first()->product;
-                if (!$product) return null;
-                
-                $totalProduced = $items->sum('actual_quantity');
-                $totalCost = $items->sum('actual_material_cost');
-                $productionCount = $items->count();
-
-                return [
-                    'product' => $product,
-                    'total_produced' => $totalProduced,
-                    'current_stock' => $product->quantity,
-                    'total_cost' => $totalCost,
-                    'production_count' => $productionCount,
-                    'avg_cost_per_unit' => $totalProduced > 0 ? $totalCost / $totalProduced : 0,
-                    'stock_status' => $this->getStockStatus($product),
-                    'stock_value' => $product->quantity * $product->cost,
-                ];
-            })->filter()->sortByDesc('total_produced');
-
         $productsProduced = ProductionPlanItem::with(['product', 'productionPlan'])
         ->whereHas('productionPlan', function($query) use ($startDate, $endDate) {
             $query->where('status', 'completed')
@@ -168,7 +140,6 @@ class ProductionDashboardController extends Controller
                 'raw_material_usages_count' => $usages->count(), // for debugging
             ];
         })->filter()->sortByDesc('total_produced');
-
 
         // Orders Fulfilled through Production
         $ordersFulfilled = ProductionPlanItem::with(['order.customer', 'order.items', 'product', 'productionPlan'])
@@ -377,9 +348,7 @@ class ProductionDashboardController extends Controller
 
         return round($totalEfficiency / $items->count(), 1);
     }
-
 }
-
 
 // Inside the index method, after the $stockLevels calculation and before the $criticalMaterials
 
@@ -467,4 +436,3 @@ $stockMovements = Product::with(['category', 'productionPlanItems', 'orderItems'
         return $priority[$item['stock_status']] ?? 5;
     })
     ->values();
-
