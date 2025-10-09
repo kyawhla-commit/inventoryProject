@@ -92,7 +92,7 @@ class ProductionDashboardController extends Controller
         $costVariancePercentage = $totalEstimatedCost > 0 ? ($costVariance / $totalEstimatedCost) * 100 : 0;
 
         // Products Produced with Stock Levels
-<<<<<<< Updated upstream
+
         $productsProduced = ProductionPlanItem::with(['product'])
             ->whereHas('productionPlan', function($query) use ($startDate, $endDate) {
                 $query->where('status', 'completed')
@@ -119,7 +119,7 @@ class ProductionDashboardController extends Controller
                     'stock_value' => $product->quantity * $product->cost,
                 ];
             })->filter()->sortByDesc('total_produced');
-=======
+
         $productsProduced = ProductionPlanItem::with(['product', 'productionPlan'])
         ->whereHas('productionPlan', function($query) use ($startDate, $endDate) {
             $query->where('status', 'completed')
@@ -168,7 +168,7 @@ class ProductionDashboardController extends Controller
                 'raw_material_usages_count' => $usages->count(), // for debugging
             ];
         })->filter()->sortByDesc('total_produced');
->>>>>>> Stashed changes
+
 
         // Orders Fulfilled through Production
         $ordersFulfilled = ProductionPlanItem::with(['order.customer', 'order.items', 'product', 'productionPlan'])
@@ -377,10 +377,9 @@ class ProductionDashboardController extends Controller
 
         return round($totalEfficiency / $items->count(), 1);
     }
-<<<<<<< Updated upstream
+
 }
-=======
-}
+
 
 // Inside the index method, after the $stockLevels calculation and before the $criticalMaterials
 
@@ -468,4 +467,4 @@ $stockMovements = Product::with(['category', 'productionPlanItems', 'orderItems'
         return $priority[$item['stock_status']] ?? 5;
     })
     ->values();
->>>>>>> Stashed changes
+
