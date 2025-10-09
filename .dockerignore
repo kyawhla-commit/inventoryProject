@@ -1,0 +1,51 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+
+# Node modules (will be installed in container)
+node_modules/
+
+# Vendor (uncomment to exclude if you want fresh install)
+# vendor/
+
+# Environment files
+.env
+.env.*
+!.env.docker
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Laravel specific
+storage/app/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+bootstrap/cache/*
+
+# Testing
+tests/
+phpunit.xml
+.phpunit.result.cache
+
+# Build artifacts
+public/build/
+public/hot
+
+# Docker files (keep docker/ directory for configs)
+Dockerfile
+docker-compose.yml
+.dockerignore
