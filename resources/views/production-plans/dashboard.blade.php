@@ -47,7 +47,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="mb-0">Total Produced</h6>
-                            <h3 class="mb-0">{{ number_format($totalProduced ?? 0, 2) }}</h3>
+                            <h3 class="mb-0">{{ number_format($totalProduced, 2) }}</h3>
                             <small>Units</small>
                         </div>
                         <div>

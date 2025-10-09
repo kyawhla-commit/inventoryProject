@@ -12,8 +12,7 @@ use App\Models\Setting;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Models\Purchase;
-
-
+use App\Models\SaleItem;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -74,33 +73,15 @@ class DashboardController extends Controller
             return Carbon::now()->subMonths($i)->format('Y-m');
         })->reverse();
 
+        $salesPerMonth = Sale::selectRaw('DATE_FORMAT(sale_date, "%Y-%m") as ym, SUM(total_amount) as total')
+            ->whereBetween('sale_date', [Carbon::now()->subMonths(11)->startOfMonth(), Carbon::now()->endOfMonth()])
+            ->groupBy('ym')
+            ->pluck('total', 'ym');
 
-$startDate = Carbon::now()->subMonths(11)->startOfMonth();
-$endDate = Carbon::now()->endOfMonth();
-
-if (DB::connection()->getDriverName() === 'sqlite') {
-    $salesPerMonth = Sale::selectRaw('strftime("%Y-%m", sale_date) as ym, SUM(total_amount) as total')
-        ->whereBetween('sale_date', [$startDate, $endDate])
-        ->groupBy('ym')
-        ->pluck('total', 'ym');
-} else {
-    $salesPerMonth = Sale::selectRaw('DATE_FORMAT(sale_date, "%Y-%m") as ym, SUM(total_amount) as total')
-        ->whereBetween('sale_date', [$startDate, $endDate])
-        ->groupBy('ym')
-        ->pluck('total', 'ym');
-}
-
-if (DB::connection()->getDriverName() === 'sqlite') {
-    $purchasesPerMonth = Purchase::selectRaw('strftime("%Y-%m", purchase_date) as ym, SUM(total_amount) as total')
-        ->whereBetween('purchase_date', [$startDate, $endDate])
-        ->groupBy('ym')
-        ->pluck('total', 'ym');
-} else {
-    $purchasesPerMonth = Purchase::selectRaw('DATE_FORMAT(purchase_date, "%Y-%m") as ym, SUM(total_amount) as total')
-        ->whereBetween('purchase_date', [$startDate, $endDate])
-        ->groupBy('ym')
-        ->pluck('total', 'ym');
-}
+        $purchasesPerMonth = Purchase::selectRaw('DATE_FORMAT(purchase_date, "%Y-%m") as ym, SUM(total_amount) as total')
+            ->whereBetween('purchase_date', [Carbon::now()->subMonths(11)->startOfMonth(), Carbon::now()->endOfMonth()])
+            ->groupBy('ym')
+            ->pluck('total', 'ym');
 
         $salesTotals = $months->map(fn($m) => (float) ($salesPerMonth[$m] ?? 0))->values();
         $purchaseTotals = $months->map(fn($m) => (float) ($purchasesPerMonth[$m] ?? 0))->values();

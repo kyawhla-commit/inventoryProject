@@ -124,7 +124,6 @@
                             </tr>
                         </thead>
                         <tbody>
-<<<<<<< Updated upstream
     @foreach($requirements as $requirement)
         @php
             // Get the raw material object - adjust based on your actual data structure
@@ -196,70 +195,6 @@
         @endif
     @endforeach
 </tbody>
-=======
-                            @foreach($requirements as $requirement)
-                                @php
-                                    $rawMaterial = $requirement['raw_material'];
-                                    $isSufficient = $requirement['is_sufficient'];
-                                @endphp
-                                <tr class="{{ !$isSufficient ? 'table-danger' : '' }}">
-                                    <td>
-                                        <strong>{{ $rawMaterial->name }}</strong>
-                                        <br>
-                                        <small class="text-muted">
-                                            Unit: {{ $requirement['unit'] }}
-                                            @if($rawMaterial->supplier)
-                                                | Supplier: {{ $rawMaterial->supplier->name }}
-                                            @endif
-                                        </small>
-                                    </td>
-                                    <td class="text-end">
-                                        <strong>{{ number_format($requirement['total_required']?? 0, 2) }}</strong> {{ $requirement['unit'] }}
-                                    </td>
-                                    <td class="text-end">
-                                        {{ number_format($requirement['available_quantity'], 2) }} {{ $rawMaterial->unit }}
-                                    </td>
-                                    <td class="text-end">
-                                        @if($requirement['shortage'] > 0)
-                                            <span class="text-danger">
-                                                <strong>{{ number_format($requirement['shortage'], 2) }}</strong> {{ $requirement['unit'] }}
-                                            </span>
-                                        @else
-                                            <span class="text-success">-</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-end">
-                                        ${{ number_format($requirement['estimated_cost'] ?? 0, 2) }}
-                                    </td>
-                                    <td class="text-center">
-                                        @if($isSufficient)
-                                            <span class="badge bg-success">
-                                                <i class="fas fa-check"></i> Sufficient
-                                            </span>
-                                        @else
-                                            <span class="badge bg-danger">
-                                                <i class="fas fa-times"></i> Insufficient
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <a href="{{ route('raw-materials.show', $rawMaterial) }}" 
-                                           class="btn btn-sm btn-outline-primary" 
-                                           target="_blank">
-                                            <i class="fas fa-eye"></i> View
-                                        </a>
-                                        @if(!$isSufficient)
-                                            <a href="{{ route('raw-materials.edit', $rawMaterial) }}" 
-                                               class="btn btn-sm btn-warning" 
-                                               target="_blank">
-                                                <i class="fas fa-shopping-cart"></i> Restock
-                                            </a>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
->>>>>>> Stashed changes
                         <tfoot class="table-info">
                             <tr>
                                 <th colspan="4">Total Estimated Material Cost</th>

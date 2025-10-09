@@ -352,7 +352,6 @@ class ProductionPlanController extends Controller
         
         // Check availability
         $requirements = collect($requirements)->map(function ($requirement) {
-<<<<<<< Updated upstream
             $rawMaterial = RawMaterial::find($requirement['raw_material_id']);
             
             // Add default value if key doesn't exist
@@ -363,40 +362,6 @@ class ProductionPlanController extends Controller
             $requirement['is_sufficient'] = $rawMaterial->quantity >= $totalRequired;
             return $requirement;
         });
-=======
-    // Check if raw_material_id exists and find the material
-    $rawMaterial = isset($requirement['raw_material_id']) 
-        ? RawMaterial::find($requirement['raw_material_id']) 
-        : null;
-    
-    // Set safe defaults
-    $totalRequired = $requirement['total_required'] ?? 0;
-    $rawMaterialQuantity = $rawMaterial ? $rawMaterial->quantity : 0;
-    
-    return array_merge($requirement, [
-        'available_quantity' => $rawMaterialQuantity,
-        'shortage' => max(0, $totalRequired - $rawMaterialQuantity),
-        'is_sufficient' => $rawMaterialQuantity >= $totalRequired,
-        'raw_material' => $rawMaterial, // Add the raw material object for the view
-    ]);
-});$requirements = collect($requirements)->map(function ($requirement) {
-    // Check if raw_material_id exists and find the material
-    $rawMaterial = isset($requirement['raw_material_id']) 
-        ? RawMaterial::find($requirement['raw_material_id']) 
-        : null;
-    
-    // Set safe defaults
-    $totalRequired = $requirement['total_required'] ?? 0;
-    $rawMaterialQuantity = $rawMaterial ? $rawMaterial->quantity : 0;
-    
-    return array_merge($requirement, [
-        'available_quantity' => $rawMaterialQuantity,
-        'shortage' => max(0, $totalRequired - $rawMaterialQuantity),
-        'is_sufficient' => $rawMaterialQuantity >= $totalRequired,
-        'raw_material' => $rawMaterial, // Add the raw material object for the view
-    ]);
-});
->>>>>>> Stashed changes
         // Get all available raw materials for additional usage
         $availableRawMaterials = RawMaterial::where('quantity', '>', 0)->get();
 
