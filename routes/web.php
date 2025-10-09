@@ -22,10 +22,10 @@
     use App\Http\Controllers\ProductionMaterialUsageController;
     use App\Http\Controllers\StaffController;
     use App\Http\Controllers\ProductRawMaterialController;
-<<<<<<< Updated upstream
-=======
+
+
     use App\Http\Controllers\ProductionCostController;
->>>>>>> Stashed changes
+
     use Illuminate\Support\Facades\Auth;
 
     Auth::routes();
@@ -248,8 +248,7 @@
         ]);
     })->name('debug.staff.store');
 
-<<<<<<< Updated upstream
-=======
+
     Route::middleware(['auth'])->group(function () {
         // Production Cost Routes
         Route::get('/production-costs/dashboard', [ProductionCostController::class, 'dashboard'])
@@ -261,5 +260,5 @@
             ->name('production-costs.update-actual');
     });
 
->>>>>>> Stashed changes
+
 
