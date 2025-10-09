@@ -92,6 +92,7 @@ class ProductionDashboardController extends Controller
         $costVariancePercentage = $totalEstimatedCost > 0 ? ($costVariance / $totalEstimatedCost) * 100 : 0;
 
         // Products Produced with Stock Levels
+<<<<<<< Updated upstream
         $productsProduced = ProductionPlanItem::with(['product'])
             ->whereHas('productionPlan', function($query) use ($startDate, $endDate) {
                 $query->where('status', 'completed')
@@ -118,6 +119,56 @@ class ProductionDashboardController extends Controller
                     'stock_value' => $product->quantity * $product->cost,
                 ];
             })->filter()->sortByDesc('total_produced');
+=======
+        $productsProduced = ProductionPlanItem::with(['product', 'productionPlan'])
+        ->whereHas('productionPlan', function($query) use ($startDate, $endDate) {
+            $query->where('status', 'completed')
+                  ->whereBetween('actual_end_date', [$startDate, $endDate]);
+        })
+        ->get()
+        ->groupBy('product_id')
+        ->map(function ($items) use ($startDate, $endDate) {
+            $product = $items->first()->product;
+            if (!$product) return null;
+            
+            $totalProduced = $items->sum('actual_quantity');
+            
+            // Get raw material usage for this product within the date range
+            $usages = \App\Models\RawMaterialUsage::where('product_id', $product->id)
+                ->where('usage_type', 'production')
+                ->whereBetween('usage_date', [$startDate, $endDate])
+                ->get();
+            
+            $totalCost = $usages->sum('total_cost');
+            
+            // If no specific usage data, fallback to calculations
+            if ($totalCost == 0) {
+                // Try to calculate from quantity_used and cost_per_unit
+                $totalCost = $usages->sum(function($usage) {
+                    return $usage->quantity_used * $usage->cost_per_unit;
+                });
+                
+                // Final fallback: use product cost
+                if ($totalCost == 0) {
+                    $totalCost = $totalProduced * $product->cost;
+                }
+            }
+            
+            $productionCount = $items->count();
+    
+            return [
+                'product' => $product,
+                'total_produced' => $totalProduced,
+                'current_stock' => $product->quantity,
+                'total_cost' => $totalCost,
+                'production_count' => $productionCount,
+                'avg_cost_per_unit' => $totalProduced > 0 ? $totalCost / $totalProduced : 0,
+                'stock_status' => $this->getStockStatus($product),
+                'stock_value' => $product->quantity * $product->cost,
+                'raw_material_usages_count' => $usages->count(), // for debugging
+            ];
+        })->filter()->sortByDesc('total_produced');
+>>>>>>> Stashed changes
 
         // Orders Fulfilled through Production
         $ordersFulfilled = ProductionPlanItem::with(['order.customer', 'order.items', 'product', 'productionPlan'])
@@ -326,4 +377,95 @@ class ProductionDashboardController extends Controller
 
         return round($totalEfficiency / $items->count(), 1);
     }
+<<<<<<< Updated upstream
 }
+=======
+}
+
+// Inside the index method, after the $stockLevels calculation and before the $criticalMaterials
+
+// Make sure these are defined somewhere above your query
+$startDate = $request->start_date ?? now()->subDays(30)->format('Y-m-d');
+$endDate = $request->end_date ?? now()->format('Y-m-d');
+
+$stockMovements = Product::with(['category', 'productionPlanItems', 'orderItems'])
+    ->select('id', 'name', 'quantity', 'unit', 'minimum_stock_level', 'price', 'cost')
+    ->get()
+    ->map(function ($product) use ($startDate, $endDate) {
+        // Your logic here // Get initial stock at start date (current - produced + ordered)
+        $producedQuantity = ProductionPlanItem::where('product_id', $product->id)
+        ->whereHas('productionPlan', function ($query) use ($startDate, $endDate) {
+            $query->where('status', 'completed')
+                ->whereBetween('actual_end_date', [$startDate, $endDate]);
+        })
+        ->sum('actual_quantity');
+        
+    // ... rest of your logic
+    
+    return $product;
+            
+        // Calculate initial stock at start of period
+        $initialStock = $product->quantity - $producedQuantity + $orderedQuantity;
+        
+        // Calculate stock trend (positive means increasing, negative means decreasing)
+        $stockTrend = $producedQuantity - $orderedQuantity;
+        
+        // Calculate stock status
+        $stockStatus = 'normal';
+        if ($product->quantity <= 0) {
+            $stockStatus = 'out_of_stock';
+        } elseif ($product->quantity <= ($product->minimum_stock_level * 0.5)) {
+            $stockStatus = 'critical';
+        } elseif ($product->quantity <= $product->minimum_stock_level) {
+            $stockStatus = 'low';
+        }
+        
+        // Calculate stock coverage days based on average daily usage
+        $avgDailyUsage = OrderItem::where('product_id', $product->id)
+            ->whereHas('order', function ($query) {
+                $query->where('order_date', '>=', now()->subDays(30));
+            })
+            ->sum('quantity') / 30;
+            
+        $stockCoverageDays = $avgDailyUsage > 0 ? round($product->quantity / $avgDailyUsage) : null;
+
+        $producedQuantity = ProductionPlanItem::where('product_id', $product->id)
+        ->whereHas('productionPlan', function ($query) use ($startDate, $endDate) {
+            $query->where('status', 'completed')
+                ->whereBetween('actual_end_date', [$startDate, $endDate]);
+        })
+        ->sum('actual_quantity');
+
+    // Calculate ordered quantity
+    $orderedQuantity = OrderItem::where('product_id', $product->id)
+        ->whereHas('order', function ($query) use ($startDate, $endDate) {
+            $query->whereBetween('created_at', [$startDate, $endDate]);
+        })
+        ->sum('quantity');
+        
+        return [
+            'product' => $product,
+            'initial_stock' => $initialStock,
+            'produced_quantity' => $producedQuantity ?? 0,
+            'ordered_quantity' => $orderedQuantity ?? 0,
+            'current_stock' => $product->quantity,
+            'minimum_stock' => $product->minimum_stock_level,
+            'stock_status' => $stockStatus,
+            'stock_trend' => $stockTrend ?? 0,
+            'stock_coverage_days' => $stockCoverageDays,
+            'stock_value' => $product->quantity * $product->cost
+        ];
+    })
+    ->sortBy(function ($item) {
+        // Sort by stock status priority (critical first, then low, then normal)
+        $priority = [
+            'out_of_stock' => 1,
+            'critical' => 2,
+            'low' => 3,
+            'normal' => 4
+        ];
+        
+        return $priority[$item['stock_status']] ?? 5;
+    })
+    ->values();
+>>>>>>> Stashed changes

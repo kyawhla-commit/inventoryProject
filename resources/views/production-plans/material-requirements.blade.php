@@ -124,68 +124,77 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($requirements as $requirement)
-                                @php
-                                    $rawMaterial = $requirement['raw_material'];
-                                    $isSufficient = $requirement['is_sufficient'];
-                                @endphp
-                                <tr class="{{ !$isSufficient ? 'table-danger' : '' }}">
-                                    <td>
-                                        <strong>{{ $rawMaterial->name }}</strong>
-                                        <br>
-                                        <small class="text-muted">
-                                            Unit: {{ $requirement['unit'] }}
-                                            @if($rawMaterial->supplier)
-                                                | Supplier: {{ $rawMaterial->supplier->name }}
-                                            @endif
-                                        </small>
-                                    </td>
-                                    <td class="text-end">
-                                        <strong>{{ number_format($requirement['total_required'], 2) }}</strong> {{ $requirement['unit'] }}
-                                    </td>
-                                    <td class="text-end">
-                                        {{ number_format($requirement['available_quantity'], 2) }} {{ $rawMaterial->unit }}
-                                    </td>
-                                    <td class="text-end">
-                                        @if($requirement['shortage'] > 0)
-                                            <span class="text-danger">
-                                                <strong>{{ number_format($requirement['shortage'], 2) }}</strong> {{ $requirement['unit'] }}
-                                            </span>
-                                        @else
-                                            <span class="text-success">-</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-end">
-                                        ${{ number_format($requirement['estimated_cost'], 2) }}
-                                    </td>
-                                    <td class="text-center">
-                                        @if($isSufficient)
-                                            <span class="badge bg-success">
-                                                <i class="fas fa-check"></i> Sufficient
-                                            </span>
-                                        @else
-                                            <span class="badge bg-danger">
-                                                <i class="fas fa-times"></i> Insufficient
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <a href="{{ route('raw-materials.show', $rawMaterial) }}" 
-                                           class="btn btn-sm btn-outline-primary" 
-                                           target="_blank">
-                                            <i class="fas fa-eye"></i> View
-                                        </a>
-                                        @if(!$isSufficient)
-                                            <a href="{{ route('raw-materials.edit', $rawMaterial) }}" 
-                                               class="btn btn-sm btn-warning" 
-                                               target="_blank">
-                                                <i class="fas fa-shopping-cart"></i> Restock
-                                            </a>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
+    @foreach($requirements as $requirement)
+        @php
+            // Get the raw material object - adjust based on your actual data structure
+            $rawMaterial = $requirement['raw_material'] ?? \App\Models\RawMaterial::find($requirement['raw_material_id']);
+            $isSufficient = $requirement['is_sufficient'] ?? false;
+            $unit = $requirement['unit'] ?? $rawMaterial->unit ?? 'unit';
+            $totalRequired = $requirement['total_required'] ?? 0;
+            $availableQuantity = $requirement['available_quantity'] ?? 0;
+            $shortage = $requirement['shortage'] ?? 0;
+            $estimatedCost = $requirement['estimated_cost'] ?? 0;
+        @endphp
+        
+        @if($rawMaterial) {{-- Only show if raw material exists --}}
+            <tr class="{{ !$isSufficient ? 'table-danger' : '' }}">
+                <td>
+                    <strong>{{ $rawMaterial->name }}</strong>
+                    <br>
+                    <small class="text-muted">
+                        Unit: {{ $unit }}
+                        @if($rawMaterial->supplier)
+                            | Supplier: {{ $rawMaterial->supplier->name }}
+                        @endif
+                    </small>
+                </td>
+                <td class="text-end">
+                    <strong>{{ number_format($totalRequired, 2) }}</strong> {{ $unit }}
+                </td>
+                <td class="text-end">
+                    {{ number_format($availableQuantity, 2) }} {{ $rawMaterial->unit }}
+                </td>
+                <td class="text-end">
+                    @if($shortage > 0)
+                        <span class="text-danger">
+                            <strong>{{ number_format($shortage, 2) }}</strong> {{ $unit }}
+                        </span>
+                    @else
+                        <span class="text-success">-</span>
+                    @endif
+                </td>
+                <td class="text-end">
+                    ${{ number_format($estimatedCost, 2) }}
+                </td>
+                <td class="text-center">
+                    @if($isSufficient)
+                        <span class="badge bg-success">
+                            <i class="fas fa-check"></i> Sufficient
+                        </span>
+                    @else
+                        <span class="badge bg-danger">
+                            <i class="fas fa-times"></i> Insufficient
+                        </span>
+                    @endif
+                </td>
+                <td>
+                    <a href="{{ route('raw-materials.show', $rawMaterial) }}" 
+                       class="btn btn-sm btn-outline-primary" 
+                       target="_blank">
+                        <i class="fas fa-eye"></i> View
+                    </a>
+                    @if(!$isSufficient)
+                        <a href="{{ route('raw-materials.edit', $rawMaterial) }}" 
+                           class="btn btn-sm btn-warning" 
+                           target="_blank">
+                            <i class="fas fa-shopping-cart"></i> Restock
+                        </a>
+                    @endif
+                </td>
+            </tr>
+        @endif
+    @endforeach
+</tbody>
                         <tfoot class="table-info">
                             <tr>
                                 <th colspan="4">Total Estimated Material Cost</th>

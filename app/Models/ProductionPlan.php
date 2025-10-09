@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductionPlan extends Model
 {
@@ -51,6 +52,14 @@ class ProductionPlan extends Model
         return $this->belongsTo(User::class, 'approved_by');
     }
 
+<<<<<<< Updated upstream
+=======
+    public function rawMaterialUsages()
+    {
+        return $this->hasMany(RawMaterialUsage::class, 'production_plan_id');
+    }
+
+>>>>>>> Stashed changes
     /**
      * Calculate the raw material requirements for this production plan
      *
