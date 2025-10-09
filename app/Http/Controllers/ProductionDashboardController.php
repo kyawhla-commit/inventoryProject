@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\ProductionPlan;
@@ -8,6 +7,8 @@ use App\Models\Product;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\RawMaterialUsage;
+use App\Models\RawMaterial;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class ProductionDashboardController extends Controller
@@ -17,6 +18,56 @@ class ProductionDashboardController extends Controller
      */
     public function index(Request $request)
     {
+        $productionStats = [
+            'total_plans' => ProductionPlan::count(),
+            'in_progress' => ProductionPlan::where('status', 'in_progress')->count(),
+            'completed' => ProductionPlan::where('status', 'completed')->count(),
+            'pending' => ProductionPlan::whereIn('status', ['draft', 'approved'])->count(),
+        ];
+
+        // Get REAL stock levels - simple and accurate
+        $stockLevels = Product::with(['category'])
+            ->select('id', 'name', 'quantity', 'unit', 'minimum_stock_level', 'price', 'cost')
+            ->get()
+            ->map(function ($product) {
+                // Calculate stock status based on actual quantity
+                if ($product->quantity <= 0) {
+                    $product->stock_status = 'out_of_stock';
+                    $product->stock_status_color = 'danger';
+                } elseif ($product->quantity <= $product->minimum_stock_level) {
+                    $product->stock_status = 'low';
+                    $product->stock_status_color = 'warning';
+                } else {
+                    $product->stock_status = 'normal';
+                    $product->stock_status_color = 'success';
+                }
+                
+                // Calculate stock value
+                $product->stock_value = $product->quantity * $product->cost;
+                
+                return $product;
+            });
+
+        // Get critical raw materials - simple query
+        $criticalMaterials = RawMaterial::select('id', 'name', 'quantity', 'unit', 'minimum_stock_level', 'cost_per_unit')
+            ->where('quantity', '<=', DB::raw('minimum_stock_level'))
+            ->get()
+            ->map(function ($material) {
+                // Calculate days remaining based on average usage
+                $avgDailyUsage = RawMaterialUsage::where('raw_material_id', $material->id)
+                    ->where('usage_date', '>=', now()->subDays(30))
+                    ->avg('quantity_used');
+                
+                $material->monthly_usage = $avgDailyUsage * 30;
+                $material->days_remaining = $avgDailyUsage > 0 
+                    ? round(($material->quantity / $avgDailyUsage), 1) 
+                    : null;
+                
+                $material->stock_value = $material->quantity * $material->cost_per_unit;
+                
+                return $material;
+            });
+
         // Filter by date range
         $startDate = $request->input('start_date', now()->subDays(30)->format('Y-m-d'));
         $endDate = $request->input('end_date', now()->format('Y-m-d'));
@@ -42,29 +93,53 @@ class ProductionDashboardController extends Controller
 
         // Products Produced with Stock Levels
         $productsProduced = ProductionPlanItem::with(['product', 'productionPlan'])
-            ->whereHas('productionPlan', function($query) use ($startDate, $endDate) {
-                $query->where('status', 'completed')
-                      ->whereBetween('actual_end_date', [$startDate, $endDate]);
-            })
-            ->get()
-            ->groupBy('product_id')
-            ->map(function ($items) {
-                $product = $items->first()->product;
-                $totalProduced = $items->sum('actual_quantity');
-                $totalCost = $items->sum('actual_material_cost');
-                $productionCount = $items->count();
-
-                return [
-                    'product' => $product,
-                    'total_produced' => $totalProduced,
-                    'current_stock' => $product->quantity,
-                    'total_cost' => $totalCost,
-                    'production_count' => $productionCount,
-                    'avg_cost_per_unit' => $totalProduced > 0 ? $totalCost / $totalProduced : 0,
-                    'stock_status' => $product->quantity <= $product->minimum_stock_level ? 'low' : 'normal',
-                    'stock_value' => $product->quantity * $product->price,
-                ];
-            })->sortByDesc('total_produced');
+        ->whereHas('productionPlan', function($query) use ($startDate, $endDate) {
+            $query->where('status', 'completed')
+                  ->whereBetween('actual_end_date', [$startDate, $endDate]);
+        })
+        ->get()
+        ->groupBy('product_id')
+        ->map(function ($items) use ($startDate, $endDate) {
+            $product = $items->first()->product;
+            if (!$product) return null;
+            
+            $totalProduced = $items->sum('actual_quantity');
+            
+            // Get raw material usage for this product within the date range
+            $usages = \App\Models\RawMaterialUsage::where('product_id', $product->id)
+                ->where('usage_type', 'production')
+                ->whereBetween('usage_date', [$startDate, $endDate])
+                ->get();
+            
+            $totalCost = $usages->sum('total_cost');
+            
+            // If no specific usage data, fallback to calculations
+            if ($totalCost == 0) {
+                // Try to calculate from quantity_used and cost_per_unit
+                $totalCost = $usages->sum(function($usage) {
+                    return $usage->quantity_used * $usage->cost_per_unit;
+                });
+                
+                // Final fallback: use product cost
+                if ($totalCost == 0) {
+                    $totalCost = $totalProduced * $product->cost;
+                }
+            }
+            
+            $productionCount = $items->count();
+    
+            return [
+                'product' => $product,
+                'total_produced' => $totalProduced,
+                'current_stock' => $product->quantity,
+                'total_cost' => $totalCost,
+                'production_count' => $productionCount,
+                'avg_cost_per_unit' => $totalProduced > 0 ? $totalCost / $totalProduced : 0,
+                'stock_status' => $this->getStockStatus($product),
+                'stock_value' => $product->quantity * $product->cost,
+                'raw_material_usages_count' => $usages->count(), // for debugging
+            ];
+        })->filter()->sortByDesc('total_produced');
 
         // Orders Fulfilled through Production
         $ordersFulfilled = ProductionPlanItem::with(['order.customer', 'order.items', 'product', 'productionPlan'])
@@ -114,7 +189,7 @@ class ProductionDashboardController extends Controller
                     'total_items' => $orderItems ? $orderItems->count() : 0,
                     'fulfilled_items' => $producedItems->count(),
                 ];
-            })->filter(); // Remove null values
+            })->filter();
 
         // Stock Movement Analysis
         $stockMovements = Product::whereHas('productionPlanItems', function($query) use ($startDate, $endDate) {
@@ -139,6 +214,7 @@ class ProductionDashboardController extends Controller
                     'minimum_stock' => $product->minimum_stock_level,
                     'stock_coverage_days' => $this->calculateStockCoverageDays($product),
                     'stock_status' => $this->getStockStatus($product),
+                    'stock_value' => $product->quantity * $product->cost,
                 ];
             });
 
@@ -157,11 +233,14 @@ class ProductionDashboardController extends Controller
         $topProducts = $productsProduced->take(10);
 
         // Low Stock Alert
-        $lowStockProducts = $stockMovements->filter(function($item) {
-            return $item['stock_status'] === 'critical' || $item['stock_status'] === 'low';
+        $lowStockProducts = $stockLevels->filter(function($product) {
+            return in_array($product->stock_status, ['low', 'out_of_stock']);
         });
 
         return view('production-plans.dashboard', compact(
+            'productionStats',
+            'stockLevels',
+            'criticalMaterials',
             'completedPlans',
             'totalProduced',
             'totalProductionCost',
@@ -184,13 +263,16 @@ class ProductionDashboardController extends Controller
      */
     private function calculateStockCoverageDays($product)
     {
-        // Get average daily sales/usage from the last 30 days
-        $avgDailyUsage = RawMaterialUsage::where('product_id', $product->id)
-            ->where('usage_date', '>=', now()->subDays(30))
-            ->avg('quantity_used');
+        // Get average daily production from the last 30 days
+        $avgDailyProduction = ProductionPlanItem::where('product_id', $product->id)
+            ->whereHas('productionPlan', function($query) {
+                $query->where('status', 'completed')
+                      ->where('actual_end_date', '>=', now()->subDays(30));
+            })
+            ->avg('actual_quantity');
 
-        if ($avgDailyUsage > 0) {
-            return round($product->quantity / $avgDailyUsage, 1);
+        if ($avgDailyProduction > 0) {
+            return round($product->quantity / ($avgDailyProduction / 30), 1);
         }
 
         return null;
@@ -267,3 +349,90 @@ class ProductionDashboardController extends Controller
         return round($totalEfficiency / $items->count(), 1);
     }
 }
+
+// Inside the index method, after the $stockLevels calculation and before the $criticalMaterials
+
+// Make sure these are defined somewhere above your query
+$startDate = $request->start_date ?? now()->subDays(30)->format('Y-m-d');
+$endDate = $request->end_date ?? now()->format('Y-m-d');
+
+$stockMovements = Product::with(['category', 'productionPlanItems', 'orderItems'])
+    ->select('id', 'name', 'quantity', 'unit', 'minimum_stock_level', 'price', 'cost')
+    ->get()
+    ->map(function ($product) use ($startDate, $endDate) {
+        // Your logic here // Get initial stock at start date (current - produced + ordered)
+        $producedQuantity = ProductionPlanItem::where('product_id', $product->id)
+        ->whereHas('productionPlan', function ($query) use ($startDate, $endDate) {
+            $query->where('status', 'completed')
+                ->whereBetween('actual_end_date', [$startDate, $endDate]);
+        })
+        ->sum('actual_quantity');
+        
+    // ... rest of your logic
+    
+    return $product;
+            
+        // Calculate initial stock at start of period
+        $initialStock = $product->quantity - $producedQuantity + $orderedQuantity;
+        
+        // Calculate stock trend (positive means increasing, negative means decreasing)
+        $stockTrend = $producedQuantity - $orderedQuantity;
+        
+        // Calculate stock status
+        $stockStatus = 'normal';
+        if ($product->quantity <= 0) {
+            $stockStatus = 'out_of_stock';
+        } elseif ($product->quantity <= ($product->minimum_stock_level * 0.5)) {
+            $stockStatus = 'critical';
+        } elseif ($product->quantity <= $product->minimum_stock_level) {
+            $stockStatus = 'low';
+        }
+        
+        // Calculate stock coverage days based on average daily usage
+        $avgDailyUsage = OrderItem::where('product_id', $product->id)
+            ->whereHas('order', function ($query) {
+                $query->where('order_date', '>=', now()->subDays(30));
+            })
+            ->sum('quantity') / 30;
+            
+        $stockCoverageDays = $avgDailyUsage > 0 ? round($product->quantity / $avgDailyUsage) : null;
+
+        $producedQuantity = ProductionPlanItem::where('product_id', $product->id)
+        ->whereHas('productionPlan', function ($query) use ($startDate, $endDate) {
+            $query->where('status', 'completed')
+                ->whereBetween('actual_end_date', [$startDate, $endDate]);
+        })
+        ->sum('actual_quantity');
+
+    // Calculate ordered quantity
+    $orderedQuantity = OrderItem::where('product_id', $product->id)
+        ->whereHas('order', function ($query) use ($startDate, $endDate) {
+            $query->whereBetween('created_at', [$startDate, $endDate]);
+        })
+        ->sum('quantity');
+        
+        return [
+            'product' => $product,
+            'initial_stock' => $initialStock,
+            'produced_quantity' => $producedQuantity ?? 0,
+            'ordered_quantity' => $orderedQuantity ?? 0,
+            'current_stock' => $product->quantity,
+            'minimum_stock' => $product->minimum_stock_level,
+            'stock_status' => $stockStatus,
+            'stock_trend' => $stockTrend ?? 0,
+            'stock_coverage_days' => $stockCoverageDays,
+            'stock_value' => $product->quantity * $product->cost
+        ];
+    })
+    ->sortBy(function ($item) {
+        // Sort by stock status priority (critical first, then low, then normal)
+        $priority = [
+            'out_of_stock' => 1,
+            'critical' => 2,
+            'low' => 3,
+            'normal' => 4
+        ];
+        
+        return $priority[$item['stock_status']] ?? 5;
+    })
+    ->values();

@@ -12,12 +12,27 @@ class Purchase extends Model
     use HasFactory;
 
     protected $fillable = [
+        'purchase_number',
         'supplier_id',
         'order_id',
         'purchase_date',
         'total_amount',
         'status',
     ];
+
+    /**
+     * The "booted" method of the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($purchase) {
+            if (empty($purchase->purchase_number)) {
+                $purchase->purchase_number = 'PO-' . date('Ymd') . '-' . strtoupper(uniqid());
+            }
+        });
+    }
 
     public function supplier()
     {

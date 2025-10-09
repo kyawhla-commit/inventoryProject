@@ -98,4 +98,40 @@ class RawMaterialController extends Controller
         $lowStockMaterials = RawMaterial::whereColumn('quantity', '<=', 'minimum_stock_level')->get();
         return view('raw-materials.low-stock', compact('lowStockMaterials'));
     }
+
+    public function updateStockFromPurchase(Purchase $purchase)
+    {
+        try {
+            DB::beginTransaction();
+    
+            foreach ($purchase->purchaseItems as $item) {
+                if ($item->raw_material_id) {
+                    $rawMaterial = RawMaterial::findOrFail($item->raw_material_id);
+                    $rawMaterial->quantity += $item->quantity;
+                    $rawMaterial->cost_per_unit = $item->unit_price; // Update cost per unit with latest purchase price
+                    $rawMaterial->last_purchase_date = $purchase->purchase_date;
+                    $rawMaterial->last_purchase_price = $item->unit_price;
+                    $rawMaterial->save();
+    
+                    // Record stock movement
+                    StockMovement::create([
+                        'raw_material_id' => $rawMaterial->id,
+                        'movement_type' => 'purchase',
+                        'quantity' => $item->quantity,
+                        'reference_id' => $purchase->id,
+                        'reference_type' => 'App\Models\Purchase',
+                        'unit_price' => $item->unit_price,
+                        'total_amount' => $item->total_amount,
+                        'notes' => "Stock added from purchase #{$purchase->purchase_number}"
+                    ]);
+                }
+            }
+    
+            DB::commit();
+            return true;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
 }
