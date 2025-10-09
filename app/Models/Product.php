@@ -100,4 +100,11 @@ class Product extends Model
             ];
         });
     }
+
+    // Add this method to the Product model class
+    
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
 }

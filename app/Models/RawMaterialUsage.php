@@ -50,6 +50,16 @@ class RawMaterialUsage extends Model
         return $this->belongsTo(User::class, 'recorded_by');
     }
 
+    public function productionPlan(): BelongsTo
+    {
+        return $this->belongsTo(ProductionPlan::class, 'production_plan_id');
+    }
+
+    /**
+     * Get the raw material that owns the usage.
+     */
+
+
     public function calculateTotalCost()
     {
         $this->total_cost = $this->quantity_used * $this->cost_per_unit;
