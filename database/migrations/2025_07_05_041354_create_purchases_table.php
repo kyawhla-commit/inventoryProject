@@ -6,25 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-    public function up(): void
+    public function up()
     {
         Schema::create('purchases', function (Blueprint $table) {
             $table->id();
+            $table->string('purchase_number')->unique();
             $table->foreignId('supplier_id')->constrained()->onDelete('cascade');
             $table->date('purchase_date');
             $table->decimal('total_amount', 10, 2);
-            $table->string('status')->default('received'); // e.g., received, pending
+            $table->string('status')->default('pending');
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('purchases');
     }
