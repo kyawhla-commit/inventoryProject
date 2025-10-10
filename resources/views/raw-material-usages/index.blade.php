@@ -7,12 +7,15 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2>{{ __('Raw Material Usage Tracking') }}</h2>
                 <div>
-<<<<<<< Updated upstream
-=======
+
                 <a href="{{ route('production-plans.dashboard') }}" class="btn btn-info">
                             <i class="fas fa-chart-line"></i> Dashboard
                         </a>
->>>>>>> Stashed changes
+
+                <a href="{{ route('production-plans.dashboard') }}" class="btn btn-info">
+                            <i class="fas fa-chart-line"></i> Dashboard
+                        </a>
+
                     <a href="{{ route('raw-material-usages.bulk-create-test') }}" class="btn btn-info me-2">
                         <i class="fas fa-layer-group"></i> {{ __('Bulk Record Usage') }}
                     </a>

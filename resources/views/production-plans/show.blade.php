@@ -279,13 +279,12 @@
                             <a href="{{ route('production-plans.material-requirements', $productionPlan) }}" class="btn btn-info">
                                 <i class="fas fa-list me-1"></i> Material Requirements
                             </a>
-<<<<<<< Updated upstream
-=======
+
                             <!-- Add near the action buttons -->
 <a href="{{ route('production-costs.show', $productionPlan) }}" class="btn btn-info">
     <i class="fas fa-calculator"></i> View Costs
 </a>
->>>>>>> Stashed changes
+
                         </div>
                     </div>
                 </div>
@@ -384,29 +383,34 @@
                                                     <i class="fas fa-box text-primary me-2"></i>
                                                 </div>
                                                 <div class="flex-grow-1">
-<<<<<<< Updated upstream
+
                                                     <small class="fw-semibold">{{ $requirement['raw_material']->name }}</small>
-=======
+
                                                     <small class="fw-semibold">{{ $requirement['raw_material']->name?? "N/A" }}</small>
->>>>>>> Stashed changes
+
+                                                    <small class="fw-semibold">{{ $requirement['raw_material']->name?? "N/A" }}</small>
+
                                                 </div>
                                             </div>
                                         </td>
                                         <td class="text-end">
-<<<<<<< Updated upstream
+
                                             <small class="fw-semibold">{{ number_format($requirement['total_required'], 2) }}</small>
-=======
+
                                             <small class="fw-semibold">{{ number_format($requirement['total_required'] ?? 0, 2) }}</small>
->>>>>>> Stashed changes
+
+                                            <small class="fw-semibold">{{ number_format($requirement['total_required'] ?? 0, 2) }}</small>
+
                                             <br>
                                             <small class="text-muted">{{ $requirement['unit'] }}</small>
                                         </td>
                                         <td class="text-end">
-<<<<<<< Updated upstream
-                                            <small class="text-success">${{ number_format($requirement['estimated_cost'], 2) }}</small>
-=======
+
+                                            <small class="text-success">${{ number_format($requirement['estimated_cost'], 2) }}</small>=======
                                             <small class="text-success">${{ number_format($requirement['estimated_cost'] ?? 0, 2) }}</small>
->>>>>>> Stashed changes
+
+                                            <small class="text-success">${{ number_format($requirement['estimated_cost'] ?? 0, 2) }}</small>
+
                                         </td>
                                     </tr>
                                     @endforeach
@@ -466,25 +470,21 @@
                                     @foreach($materialRequirements as $requirement)
                                     <tr>
                                         <td>
-<<<<<<< Updated upstream
+
                                             <small class="fw-semibold">{{ $requirement['raw_material']->name }}</small>
+
+                                            <small class="fw-semibold">{{ $requirement['raw_material']->name?? "N/A" }}</small>
+
                                         </td>
                                         <td class="text-end">
-                                            <small>{{ number_format($requirement['total_required'], 2) }}</small>
+                                            <small>{{ number_format($requirement['total_required'] ?? 0, 2) }}</small>
                                         </td>
                                         <td class="text-end">
-                                            <small class="{{ $requirement['raw_material']->quantity >= $requirement['total_required'] ? 'text-success' : 'text-danger' }}">
-                                                {{ number_format($requirement['raw_material']->quantity, 2) }}
-                                            </small>
+                                        <small class="{{ ($requirement['raw_material']->quantity ?? 0) >= ($requirement['total_required'] ?? 0) ? 'text-success' : 'text-danger' }}">
+    {{ number_format($requirement['raw_material']->quantity ?? 0, 2) }}
+</small>
                                         </td>
-                                        <td class="text-center">
-                                            @if($requirement['raw_material']->quantity >= $requirement['total_required'])
-                                                <i class="fas fa-check-circle text-success" title="Sufficient"></i>
-                                            @else
-                                                <i class="fas fa-exclamation-triangle text-danger" title="Insufficient"></i>
-                                            @endif
-                                        </td>
-=======
+
                                             <small class="fw-semibold">{{ $requirement['raw_material']->name?? "N/A" }}</small>
                                         </td>
                                         <td class="text-end">
@@ -495,6 +495,8 @@
     {{ number_format($requirement['raw_material']->quantity ?? 0, 2) }}
 </small>
                                         </td>
+=======
+>>>>>>> kyawhla-second/kyawhla
                                         @php
     $currentQuantity = isset($requirement['raw_material']) && is_object($requirement['raw_material']) 
         ? $requirement['raw_material']->quantity 
@@ -511,14 +513,13 @@
         <i class="fas fa-exclamation-triangle text-danger" title="Insufficient"></i>
     @endif
 </td>
->>>>>>> Stashed changes
+
                                     </tr>
                                     @endforeach
                                 </tbody>
                             </table>
                         </div>
-<<<<<<< Updated upstream
-=======
+
                     @endif
                 </div>
             </div>
@@ -569,7 +570,57 @@
                         <div class="alert alert-info mt-3 mb-0">
                             <i class="fas fa-info-circle me-2"></i> Stock will be updated when the production plan is completed
                         </div>
->>>>>>> Stashed changes
+
+                    @endif
+                </div>
+            </div>
+            <!-- Stock Impact Card -->
+            <div class="card mt-4">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="card-title mb-0">Stock Impact</h5>
+                </div>
+                <div class="card-body">
+                    @if($productionPlan->status === 'completed')
+                        <div class="alert alert-success mb-3">
+                            <i class="fas fa-check-circle me-2"></i> Stock levels have been updated upon completion
+                        </div>
+                    @endif
+                    
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th class="text-end">Before</th>
+                                    <th class="text-end">Change</th>
+                                    <th class="text-end">After</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($productionPlan->productionPlanItems as $item)
+                                <tr>
+                                    <td>
+                                        <small class="fw-semibold">{{ $item->product->name }}</small>
+                                    </td>
+                                    <td class="text-end">
+                                        <small>{{ number_format($item->initial_stock ?? $item->product->quantity, 2) }}</small>
+                                    </td>
+                                    <td class="text-end">
+                                        <small class="text-success">+{{ number_format($item->actual_quantity, 2) }}</small>
+                                    </td>
+                                    <td class="text-end">
+                                        <small class="fw-semibold">{{ number_format($item->product->quantity, 2) }}</small>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    @if($productionPlan->status !== 'completed')
+                        <div class="alert alert-info mt-3 mb-0">
+                            <i class="fas fa-info-circle me-2"></i> Stock will be updated when the production plan is completed
+                        </div>
                     @endif
                 </div>
             </div>
@@ -609,8 +660,5 @@
     background-color: rgba(0, 0, 0, 0.02);
 }
 </style>
-<<<<<<< Updated upstream
+
 @endsection
-=======
-@endsection
->>>>>>> Stashed changes
