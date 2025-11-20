@@ -1,44 +1,79 @@
-<p align="center">
-  <a href="https://laravel.com" target="_blank">
-    <img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo">
-  </a>
-  <h1 align="center">Inventory Management System</h1>
-  <p align="center">A comprehensive Laravel-based inventory management solution</p>
-  
-  <p align="center">
-    <a href="#features">Features</a> •
-    <a href="#prerequisites">Prerequisites</a> •
-    <a href="#installation">Installation</a> •
-    <a href="#usage">Usage</a>
-  </p>
-</p>
+<div align="center">
+  <img src="public/images/logo.svg" alt="Inventory Management System Logo" width="400">
 
-## Features
+  # Inventory Management System
 
-- **Multi-User Role System** (Admin, Manager, Staff)
-- **Product Management** - Track inventory items with categories
-- **Customer Management** - Maintain customer records and order history
-- **Supplier Management** - Manage suppliers and their products
-- **Purchase Orders** - Record and track inventory purchases
-- **Sales Management** - Process and track customer sales
-- **Order Management** - Manage customer orders and order statuses
-- **Dashboard** - Visual overview of key metrics and reports
-- **Low Stock Alerts** - Get notified when inventory runs low
+  [![Laravel](https://img.shields.io/badge/Laravel-12.0-FF2D20?style=for-the-badge&logo=laravel)](https://laravel.com)
+  [![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?style=for-the-badge&logo=php)](https://php.net)
+  [![MySQL](https://img.shields.io/badge/MySQL-8.0+-4479A1?style=for-the-badge&logo=mysql)](https://mysql.com)
+  [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.0-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-## Prerequisites
+  > A comprehensive, modern inventory management solution built with Laravel 12, designed for businesses of all sizes to efficiently track products, manage stock levels, and streamline operations.
 
-- PHP >= 8.1
+  [📋 Features](#features) • [🚀 Quick Start](#quick-start) • [📖 Documentation](#documentation) • [🤝 Contributing](#contributing) • [📄 License](#license)
+</div>
+
+---
+
+## 🌟 Key Features
+
+### Core Functionality
+- **📦 Product Management** - Complete product lifecycle management with categories, SKUs, and detailed tracking
+- **👥 Multi-User Role System** - Granular permissions for Admin, Manager, and Staff roles
+- **🏢 Customer Management** - Comprehensive customer database with order history and preferences
+- **🏭 Supplier Management** - Track suppliers, manage relationships, and monitor supplier performance
+- **📋 Purchase Orders** - Streamlined procurement process with approval workflows
+- **💰 Sales Management** - Point-of-sale functionality with transaction tracking
+- **📊 Advanced Analytics** - Real-time dashboards with key performance indicators
+- **🚨 Smart Alerts** - Automated low-stock notifications and expiry warnings
+
+### Advanced Features
+- **📈 Production Dashboard** - Monitor manufacturing processes and material usage
+- **📊 Expense Tracking** - Comprehensive financial management and reporting
+- **🔄 Monthly Reports** - Automated monthly expense and inventory reports
+- **📱 Responsive Design** - Fully responsive interface for desktop and mobile
+- **🔒 Security First** - Laravel Sanctum authentication with secure API endpoints
+- **📄 PDF Generation** - Export reports and invoices as PDF documents
+- **☁️ Offline Support** - SQLite compatibility for offline deployments
+
+---
+
+## 🛠️ Technology Stack
+
+### Backend
+- **Laravel 12.0** - Modern PHP framework with expressive syntax
+- **PHP 8.2+** - Latest PHP features for optimal performance
+- **MySQL 8.0+** - Robust relational database (SQLite compatible)
+
+### Frontend
+- **Tailwind CSS 4.0** - Utility-first CSS framework for rapid UI development
+- **Bootstrap 5.2** - Responsive UI components and layouts
+- **Vite** - Lightning-fast build tool for modern web development
+- **Axios** - HTTP client for seamless API communication
+
+### Development Tools
+- **Composer** - PHP dependency management
+- **NPM** - Node.js package management
+- **Laravel Sail** - Docker development environment
+- **Laravel Pail** - Enhanced logging and debugging
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+- PHP >= 8.2
 - Composer
-- MySQL 5.7+ or MariaDB 10.3+
-- Node.js 14+ & NPM
-- Web server (Apache/Nginx) or PHP's built-in server
+- Node.js 18+ & NPM
+- MySQL 8.0+ or MariaDB 10.3+
 
-## Installation
+### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/inventory-management-system.git
-   cd inventory-management-system
+   git clone https://github.com/kyawhla-commit/inventoryProject.git
+   cd inventoryProject
    ```
 
 2. **Install PHP dependencies**
@@ -46,252 +81,217 @@
    composer install
    ```
 
-3. **Install JavaScript dependencies**
+3. **Install Node.js dependencies**
    ```bash
    npm install
    ```
 
-4. **Create environment file**
+4. **Environment configuration**
    ```bash
    cp .env.example .env
-   ```
-
-5. **Generate application key**
-   ```bash
    php artisan key:generate
    ```
 
-6. **Configure database**
-   Update `.env` file with your database credentials:
-   ```
-   DB_CONNECTION=mysql
-   DB_HOST=127.0.0.1
-   DB_PORT=3306
-   DB_DATABASE=inventory
-   DB_USERNAME=root
-   DB_PASSWORD=
-   ```
-
-7. **Run migrations and seed the database**
+5. **Database setup**
    ```bash
+   # Configure your database in .env file
    php artisan migrate --seed
-   ```
-   This will create the database tables and seed them with sample data.
-
-8. **Link storage**
-   ```bash
    php artisan storage:link
-   
    ```
 
-9. **Compile assets**
+6. **Build assets and start development server**
    ```bash
    npm run build
+   php artisan serve
    ```
 
-10. **Start the development server**
-    ```bash
-    php artisan serve
-    ```
+7. **Access the application**
+   Open [http://localhost:8000](http://localhost:8000) in your browser
 
-## Usage
-
-1. Access the application at `http://localhost:8000`
-2. Login using the default credentials:
-   - **Admin**
-     - Email: admin@example.com
-     - Password: password
-   - **Manager**
-     - Email: manager@example.com
-     - Password: password
-   - **Staff**
-     - Email: staff@example.com
-     - Password: password
-
-# How to Use This Inventory Project
-
-This inventory management system helps you track products, manage stock, and monitor business operations efficiently. Below are detailed instructions on how to use the system:
-
-## 1. Installation
-
-- Clone the repository:
-  ```bash
-  git clone https://github.com/kyawhla-commit/inventoryProject.git
-  cd inventoryProject
-  ```
-- Install dependencies:
-  ```bash
-  npm install
-  ```
-- Start the development server:
-  ```bash
-  npm run dev
-  ```
-  The app will be available at `http://localhost:3000`.
-
-## 2. User Authentication
-- Register a new account or log in with your credentials.
-- User roles (admin, manager, staff) may have different permissions.
-
-## 3. Dashboard Overview
-- After login, you will see a dashboard summarizing inventory status, product counts, and recent activities.
-
-## 4. Managing Products
-- Navigate to the **Products** section.
-- Add new products by providing details such as name, SKU, category, price, and quantity.
-- Edit or delete existing products as needed.
-
-## 5. Inventory Tracking
-- Go to the **Inventory** section.
-- View current stock levels for all products.
-- Update stock quantities when new items arrive or are sold.
-- Set low-stock alerts to avoid running out of products.
-
-## 6. Expense Management
-- Access the **Expenses** section to log and categorize business expenses.
-- View expense history and generate reports for financial analysis.
-
-## 7. User Management
-- In the **Users** section, admins can add, edit, or remove users.
-- Assign roles and permissions to control access to different features.
-
-## 8. Settings
-- Customize system preferences, such as currency, language, and notification settings.
-- Update your profile information.
-
-## 9. Reports & Analytics
-- Generate inventory, sales, and expense reports for business insights.
-- Export data as CSV or PDF for external use.
-
-## 10. Support
-- For help or troubleshooting, refer to the documentation or contact the project maintainer.
+### Default Credentials
+- **Admin**: `admin@example.com` / `password`
+- **Manager**: `manager@example.com` / `password`
+- **Staff**: `staff@example.com` / `password`
 
 ---
 
-This guide covers the main features and usage of the inventory management system. For more details, explore each section in the app or check the source code for advanced customization.
+## 📖 Documentation
 
-## Contributing
+### User Guides
+- [📋 Installation Checklist](INSTALLATION_CHECKLIST.md)
+- [📊 Production Dashboard Guide](PRODUCTION_DASHBOARD_IMPLEMENTATION.md)
+- [📈 Monthly Reports Guide](MONTHLY_EXPENSES_GUIDE.md)
+- [🔧 Implementation Summary](IMPLEMENTATION_SUMMARY.md)
+
+### API Documentation
+- [📡 Complete API Reference](API_DOCUMENTATION.md)
+- RESTful API endpoints for all major operations
+- Authentication via Laravel Sanctum
+- Comprehensive request/response examples
+
+### Development
+- [🏗️ Files Summary](FILES_SUMMARY.md)
+- [✅ Implementation Success Guide](IMPLEMENTATION_SUCCESS.md)
+
+---
+
+## 🏗️ Architecture
+
+### Project Structure
+```
+inventoryProject/
+├── app/                 # Application code
+│   ├── Http/Controllers # Request handlers
+│   ├── Models          # Eloquent models
+│   └── Services        # Business logic
+├── database/           # Migrations and seeders
+├── public/             # Public assets
+├── resources/          # Views and frontend assets
+├── routes/             # API and web routes
+└── storage/            # File storage
+```
+
+### Database Design
+- **Normalized schema** with proper relationships
+- **Migration-based** database versioning
+- **Seeded with sample data** for immediate testing
+- **Supports multiple database backends** (MySQL, SQLite, PostgreSQL)
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables
+```env
+APP_NAME="Inventory Management System"
+APP_ENV=local
+APP_KEY=base64:generated-key
+APP_DEBUG=true
+APP_URL=http://localhost
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=inventory
+DB_USERNAME=your-username
+DB_PASSWORD=your-password
+
+BROADCAST_DRIVER=log
+CACHE_DRIVER=file
+QUEUE_CONNECTION=sync
+SESSION_DRIVER=file
+```
+
+### Additional Configuration
+- **Queue workers** for background processing
+- **Mail configuration** for notifications
+- **Storage settings** for file uploads
+- **Broadcasting** for real-time updates
+
+---
+
+## 🚢 Deployment
+
+### Production Deployment
+1. **Environment setup**
+   ```bash
+   APP_ENV=production
+   APP_DEBUG=false
+   APP_URL=https://yourdomain.com
+   ```
+
+2. **Database optimization**
+   ```bash
+   php artisan config:cache
+   php artisan route:cache
+   php artisan view:cache
+   ```
+
+3. **Web server configuration**
+   - Configure Nginx/Apache for Laravel
+   - Set up SSL certificates
+   - Configure proper file permissions
+
+### Offline Deployment
+- **SQLite support** for single-file databases
+- **Docker containers** for easy distribution
+- **Portable bundles** for Windows deployment
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## Security Vulnerabilities
-
-If you discover a security vulnerability, please send an email to your-email@example.com. All security vulnerabilities will be promptly addressed.
-
-## License
-
-This project is open-sourced under the [MIT license](https://opensource.org/licenses/MIT).
-
-## About Laravel
-
-## About Laravel
-
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
-
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Development Workflow
+- **Feature branches** for new functionality
+- **Pull requests** with detailed descriptions
+- **Code review** before merging
+- **Testing** on all branches
 
 ---
 
-*This project was developed using Laravel. For more information about the framework, visit the [official Laravel documentation](https://laravel.com/docs).*
+## 📊 Performance
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Optimization Features
+- **Database indexing** for fast queries
+- **Caching strategies** for improved response times
+- **Asset optimization** with Vite bundling
+- **Lazy loading** for better user experience
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
-
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Monitoring
+- **Laravel Pail** for enhanced logging
+- **Performance metrics** tracking
+- **Error monitoring** and reporting
 
 ---
 
-## Offline & Portable Deployment
+## 🔒 Security
 
-You can ship this application to a customer who has **no internet connection**.
+### Security Measures
+- **CSRF protection** on all forms
+- **SQL injection prevention** via Eloquent ORM
+- **XSS protection** with proper escaping
+- **Secure authentication** with Laravel Sanctum
+- **Input validation** on all requests
+- **Rate limiting** for API endpoints
 
-### Option 1 – Portable Windows Bundle (SQLite)
-1. Set `.env` to SQLite:
-   ```env
-   DB_CONNECTION=sqlite
-   DB_DATABASE=database/database.sqlite
-   ```
-2. Create the DB and migrate:
-   ```bash
-   mkdir -p database && type nul > database\database.sqlite
-   php artisan migrate --seed
-   ```
-3. Copy a portable PHP runtime (PHP 8.x zip) into `runtime\php`.
-4. Add a launcher `start.bat`:
-   ```bat
-   @echo off
-   runtime\php\php.exe -S localhost:8000 -t public > server.log 2>&1 &
-   start "" http://localhost:8000
-   pause
-   ```
-
-### Option 2 – Docker Appliance (cross-platform)
-1. Provide this `docker-compose.yml`:
-   ```yaml
-   version: "3.9"
-   services:
-     app:
-       image: php:8.2-cli
-       working_dir: /var/www
-       volumes:
-         - ./:/var/www
-       command: php artisan serve --host=0.0.0.0 --port=8000
-       depends_on: [db]
-     db:
-       image: mariadb:10.9
-       environment:
-         MYSQL_ROOT_PASSWORD: secret
-         MYSQL_DATABASE: inventory
-   volumes:
-     dbdata:
-   ```
-2. Ship `start.bat` / `start.sh` that runs `docker compose up --build` and opens the browser.
+### Best Practices
+- **Environment-based configuration**
+- **Secure password hashing**
+- **Session management**
+- **File upload restrictions**
 
 ---
+
+## 📄 License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- **Laravel Team** for the amazing framework
+- **Tailwind CSS** for the utility-first styling
+- **Open Source Community** for continuous inspiration
+- **Contributors** who help improve this project
+
+---
+
+<div align="center">
+
+**Built with ❤️ using Laravel 12**
+
+For support, email [bwarpay.bp8@gmail.com](mailto:bwarpay.bp8@gmail.com) or create an issue on GitHub.
+
+⭐ **Star this repository if you find it helpful!**
+
+</div>
 
