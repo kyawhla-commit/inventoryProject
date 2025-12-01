@@ -77,12 +77,22 @@
             
             // Purchase & Sales
             Route::resource('purchases', PurchaseController::class);
+            Route::post('purchases/{purchase}/receive', [PurchaseController::class, 'receive'])->name('purchases.receive');
+            Route::post('purchases/{purchase}/cancel', [PurchaseController::class, 'cancel'])->name('purchases.cancel');
+            Route::get('purchases/{purchase}/duplicate', [PurchaseController::class, 'duplicate'])->name('purchases.duplicate');
+            Route::get('purchases/{purchase}/print', [PurchaseController::class, 'print'])->name('purchases.print');
+            Route::get('purchases-export', [PurchaseController::class, 'export'])->name('purchases.export');
+            Route::get('api/suppliers/{supplier}/materials', [PurchaseController::class, 'getMaterialsBySupplier'])->name('api.supplier.materials');
+            Route::get('api/purchases/suggested-order', [PurchaseController::class, 'getSuggestedOrder'])->name('api.purchases.suggested');
             Route::resource('sales', SaleController::class);
             Route::resource('customers', CustomerController::class);
             
             // Raw Materials
             Route::resource('raw-materials', RawMaterialController::class);
             Route::get('raw-materials-low-stock', [RawMaterialController::class, 'lowStock'])->name('raw-materials.low-stock');
+            Route::post('raw-materials/{rawMaterial}/adjust-stock', [RawMaterialController::class, 'adjustStock'])->name('raw-materials.adjust-stock');
+            Route::get('raw-materials-export', [RawMaterialController::class, 'export'])->name('raw-materials.export');
+            Route::get('api/raw-materials/{rawMaterial}/usage-stats', [RawMaterialController::class, 'usageStats'])->name('api.raw-materials.usage-stats');
             
             // Raw Material Usage Tracking
             Route::resource('raw-material-usages', RawMaterialUsageController::class);

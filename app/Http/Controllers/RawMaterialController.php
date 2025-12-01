@@ -5,35 +5,59 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\RawMaterial;
 use App\Models\Supplier;
+use App\Services\RawMaterialService;
+use Illuminate\Support\Facades\DB;
 
 class RawMaterialController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    protected RawMaterialService $rawMaterialService;
+
+    public function __construct(RawMaterialService $rawMaterialService)
     {
-        $rawMaterials = RawMaterial::with('supplier')->latest()->paginate(10);
-        return view('raw-materials.index', compact('rawMaterials'));
+        $this->rawMaterialService = $rawMaterialService;
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Display a listing of raw materials
+     */
+    public function index(Request $request)
+    {
+        $rawMaterials = $this->rawMaterialService->search([
+            'search' => $request->search,
+            'supplier_id' => $request->supplier_id,
+            'low_stock' => $request->low_stock,
+            'sort_by' => $request->sort_by ?? 'name',
+            'sort_dir' => $request->sort_dir ?? 'asc',
+            'per_page' => 15,
+        ]);
+
+        $suppliers = Supplier::orderBy('name')->get();
+        
+        // Get dashboard stats
+        $stats = $this->rawMaterialService->getDashboardStats();
+
+        return view('raw-materials.index', compact('rawMaterials', 'suppliers', 'stats'));
+    }
+
+    /**
+     * Show the form for creating a new raw material
      */
     public function create()
     {
-        $suppliers = Supplier::all();
-        return view('raw-materials.create', compact('suppliers'));
+        $suppliers = Supplier::orderBy('name')->get();
+        $units = ['kg', 'g', 'lb', 'oz', 'L', 'mL', 'pcs', 'm', 'cm', 'ft', 'in'];
+
+        return view('raw-materials.create', compact('suppliers', 'units'));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created raw material
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'description' => 'nullable|string|max:1000',
             'quantity' => 'required|numeric|min:0',
             'unit' => 'required|string|max:50',
             'cost_per_unit' => 'required|numeric|min:0',
@@ -41,37 +65,70 @@ class RawMaterialController extends Controller
             'minimum_stock_level' => 'required|numeric|min:0',
         ]);
 
-        RawMaterial::create($request->all());
+        try {
+            $material = RawMaterial::create($validated);
 
-        return redirect()->route('raw-materials.index')
-                         ->with('success', 'Raw material created successfully.');
+            return redirect()
+                ->route('raw-materials.show', $material)
+                ->with('success', __('Raw material created successfully.'));
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->with('error', __('Failed to create raw material: ') . $e->getMessage());
+        }
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified raw material
      */
-    public function show(string $id)
+    public function show(RawMaterial $rawMaterial)
     {
-        //
+        $rawMaterial->load(['supplier', 'products']);
+        
+        // Get usage statistics
+        $usageStats = $this->rawMaterialService->getUsageStatistics($rawMaterial);
+        
+        // Get reorder analysis
+        $reorderAnalysis = $this->rawMaterialService->calculateReorderPoint($rawMaterial);
+        
+        // Get purchase history
+        $purchaseHistory = $this->rawMaterialService->getPurchaseHistory($rawMaterial, 10);
+        
+        // Get stock movements
+        $stockMovements = $this->rawMaterialService->getStockMovements($rawMaterial, 20);
+        
+        // Get price trend
+        $priceTrend = $this->rawMaterialService->getPriceTrend($rawMaterial, 6);
+
+        return view('raw-materials.show', compact(
+            'rawMaterial',
+            'usageStats',
+            'reorderAnalysis',
+            'purchaseHistory',
+            'stockMovements',
+            'priceTrend'
+        ));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing the specified raw material
      */
     public function edit(RawMaterial $rawMaterial)
     {
-        $suppliers = Supplier::all();
-        return view('raw-materials.edit', compact('rawMaterial', 'suppliers'));
+        $suppliers = Supplier::orderBy('name')->get();
+        $units = ['kg', 'g', 'lb', 'oz', 'L', 'mL', 'pcs', 'm', 'cm', 'ft', 'in'];
+
+        return view('raw-materials.edit', compact('rawMaterial', 'suppliers', 'units'));
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified raw material
      */
     public function update(Request $request, RawMaterial $rawMaterial)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'description' => 'nullable|string|max:1000',
             'quantity' => 'required|numeric|min:0',
             'unit' => 'required|string|max:50',
             'cost_per_unit' => 'required|numeric|min:0',
@@ -79,59 +136,152 @@ class RawMaterialController extends Controller
             'minimum_stock_level' => 'required|numeric|min:0',
         ]);
 
-        $rawMaterial->update($request->all());
+        try {
+            $rawMaterial->update($validated);
 
-        return redirect()->route('raw-materials.index')
-            ->with('success', 'Raw material updated successfully.');
+            return redirect()
+                ->route('raw-materials.show', $rawMaterial)
+                ->with('success', __('Raw material updated successfully.'));
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->with('error', __('Failed to update raw material: ') . $e->getMessage());
+        }
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified raw material
      */
-    public function destroy(string $id)
+    public function destroy(RawMaterial $rawMaterial)
     {
-        //
+        // Check if material is used in any products or recipes
+        if ($rawMaterial->products()->count() > 0) {
+            return redirect()
+                ->route('raw-materials.index')
+                ->with('error', __('Cannot delete raw material that is used in products.'));
+        }
+
+        if ($rawMaterial->recipeItems()->count() > 0) {
+            return redirect()
+                ->route('raw-materials.index')
+                ->with('error', __('Cannot delete raw material that is used in recipes.'));
+        }
+
+        $rawMaterial->delete();
+
+        return redirect()
+            ->route('raw-materials.index')
+            ->with('success', __('Raw material deleted successfully.'));
     }
 
+    /**
+     * Display low stock materials
+     */
     public function lowStock()
     {
-        $lowStockMaterials = RawMaterial::whereColumn('quantity', '<=', 'minimum_stock_level')->get();
-        return view('raw-materials.low-stock', compact('lowStockMaterials'));
+        $lowStockMaterials = $this->rawMaterialService->getMaterialsNeedingReorder();
+        
+        // Group by supplier for easy ordering
+        $bySupplier = $lowStockMaterials->groupBy('supplier_id');
+
+        return view('raw-materials.low-stock', compact('lowStockMaterials', 'bySupplier'));
     }
 
-    public function updateStockFromPurchase(Purchase $purchase)
+    /**
+     * Adjust stock quantity
+     */
+    public function adjustStock(Request $request, RawMaterial $rawMaterial)
     {
+        $validated = $request->validate([
+            'adjustment' => 'required|numeric',
+            'reason' => 'required|string|max:255',
+            'type' => 'required|in:adjustment,damage,return,correction',
+        ]);
+
         try {
-            DB::beginTransaction();
-    
-            foreach ($purchase->purchaseItems as $item) {
-                if ($item->raw_material_id) {
-                    $rawMaterial = RawMaterial::findOrFail($item->raw_material_id);
-                    $rawMaterial->quantity += $item->quantity;
-                    $rawMaterial->cost_per_unit = $item->unit_price; // Update cost per unit with latest purchase price
-                    $rawMaterial->last_purchase_date = $purchase->purchase_date;
-                    $rawMaterial->last_purchase_price = $item->unit_price;
-                    $rawMaterial->save();
-    
-                    // Record stock movement
-                    StockMovement::create([
-                        'raw_material_id' => $rawMaterial->id,
-                        'movement_type' => 'purchase',
-                        'quantity' => $item->quantity,
-                        'reference_id' => $purchase->id,
-                        'reference_type' => 'App\Models\Purchase',
-                        'unit_price' => $item->unit_price,
-                        'total_amount' => $item->total_amount,
-                        'notes' => "Stock added from purchase #{$purchase->purchase_number}"
-                    ]);
-                }
-            }
-    
-            DB::commit();
-            return true;
+            $this->rawMaterialService->adjustStock(
+                $rawMaterial,
+                $validated['adjustment'],
+                $validated['reason'],
+                $validated['type']
+            );
+
+            return redirect()
+                ->route('raw-materials.show', $rawMaterial)
+                ->with('success', __('Stock adjusted successfully.'));
         } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
+            return back()->with('error', $e->getMessage());
         }
+    }
+
+    /**
+     * Get purchase history (AJAX)
+     */
+    public function purchaseHistory(RawMaterial $rawMaterial)
+    {
+        $history = $this->rawMaterialService->getPurchaseHistory($rawMaterial, 20);
+        
+        return response()->json($history);
+    }
+
+    /**
+     * Get usage statistics (AJAX)
+     */
+    public function usageStats(Request $request, RawMaterial $rawMaterial)
+    {
+        $startDate = $request->start_date ? \Carbon\Carbon::parse($request->start_date) : null;
+        $endDate = $request->end_date ? \Carbon\Carbon::parse($request->end_date) : null;
+
+        $stats = $this->rawMaterialService->getUsageStatistics($rawMaterial, $startDate, $endDate);
+        
+        return response()->json($stats);
+    }
+
+    /**
+     * Export raw materials to CSV
+     */
+    public function export(Request $request)
+    {
+        $materials = RawMaterial::with('supplier')
+            ->when($request->status, fn($q) => $q->where('status', $request->status))
+            ->when($request->low_stock, fn($q) => $q->lowStock())
+            ->orderBy('name')
+            ->get();
+
+        $filename = 'raw_materials_' . now()->format('Y-m-d') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ];
+
+        $callback = function () use ($materials) {
+            $file = fopen('php://output', 'w');
+
+            fputcsv($file, [
+                'SKU', 'Name', 'Category', 'Supplier', 'Quantity', 'Unit',
+                'Cost/Unit', 'Stock Value', 'Min Stock', 'Status', 'Location'
+            ]);
+
+            foreach ($materials as $material) {
+                fputcsv($file, [
+                    $material->sku ?? '-',
+                    $material->name,
+                    $material->category ?? '-',
+                    $material->supplier->name ?? '-',
+                    $material->quantity,
+                    $material->unit,
+                    $material->cost_per_unit,
+                    $material->stock_value,
+                    $material->minimum_stock_level,
+                    $material->status,
+                    $material->location ?? '-',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

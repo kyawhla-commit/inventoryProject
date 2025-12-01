@@ -5,26 +5,17 @@
     {{-- Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h3 mb-1">{{ __('Create Purchase Order') }}</h1>
-            <p class="text-muted mb-0">{{ __('Order raw materials from suppliers') }}</p>
+            <h1 class="h3 mb-1">{{ __('Edit Purchase Order') }}</h1>
+            <p class="text-muted mb-0">{{ $purchase->purchase_number }}</p>
         </div>
-        <a href="{{ route('purchases.index') }}" class="btn btn-outline-secondary">
+        <a href="{{ route('purchases.show', $purchase) }}" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left me-2"></i>{{ __('Back') }}
         </a>
     </div>
 
-    {{-- Low Stock Alert --}}
-    @if($lowStockMaterials->count() > 0)
-        <div class="alert alert-warning alert-dismissible fade show" role="alert">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            <strong>{{ __('Low Stock Alert:') }}</strong> 
-            {{ $lowStockMaterials->count() }} {{ __('materials are below minimum stock level.') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
-    <form action="{{ route('purchases.store') }}" method="POST" id="purchaseForm">
+    <form action="{{ route('purchases.update', $purchase) }}" method="POST" id="purchaseForm">
         @csrf
+        @method('PUT')
         
         <div class="row">
             {{-- Main Form --}}
@@ -41,7 +32,7 @@
                                     <option value="">{{ __('Select Supplier') }}</option>
                                     @foreach($suppliers as $supplier)
                                         <option value="{{ $supplier->id }}" 
-                                                {{ (old('supplier_id', $selectedSupplier?->id ?? ($duplicateFrom->supplier_id ?? '')) == $supplier->id) ? 'selected' : '' }}>
+                                                {{ old('supplier_id', $purchase->supplier_id) == $supplier->id ? 'selected' : '' }}>
                                             {{ $supplier->name }}
                                         </option>
                                     @endforeach
@@ -54,7 +45,7 @@
                                 <label for="purchase_date" class="form-label">{{ __('Purchase Date') }} <span class="text-danger">*</span></label>
                                 <input type="date" name="purchase_date" id="purchase_date" 
                                        class="form-control @error('purchase_date') is-invalid @enderror"
-                                       value="{{ old('purchase_date', now()->format('Y-m-d')) }}" required>
+                                       value="{{ old('purchase_date', $purchase->purchase_date->format('Y-m-d')) }}" required>
                                 @error('purchase_date')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -62,15 +53,14 @@
                             <div class="col-md-6">
                                 <label for="status" class="form-label">{{ __('Status') }}</label>
                                 <select name="status" id="status" class="form-select">
-                                    <option value="pending">{{ __('Pending') }}</option>
-                                    <option value="approved">{{ __('Approved') }}</option>
-                                    <option value="received">{{ __('Received (Update Stock Immediately)') }}</option>
+                                    <option value="pending" {{ $purchase->status == 'pending' ? 'selected' : '' }}>{{ __('Pending') }}</option>
+                                    <option value="approved" {{ $purchase->status == 'approved' ? 'selected' : '' }}>{{ __('Approved') }}</option>
+                                    <option value="received" {{ $purchase->status == 'received' ? 'selected' : '' }}>{{ __('Received') }}</option>
                                 </select>
                             </div>
                             <div class="col-12">
                                 <label for="notes" class="form-label">{{ __('Notes') }}</label>
-                                <textarea name="notes" id="notes" class="form-control" rows="2" 
-                                          placeholder="{{ __('Optional notes...') }}">{{ old('notes') }}</textarea>
+                                <textarea name="notes" id="notes" class="form-control" rows="2">{{ old('notes', $purchase->notes) }}</textarea>
                             </div>
                         </div>
                     </div>
@@ -98,7 +88,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="itemsBody">
-                                    {{-- Items will be added here dynamically --}}
+                                    {{-- Items will be loaded here --}}
                                 </tbody>
                                 <tfoot class="table-light">
                                     <tr>
@@ -115,39 +105,6 @@
 
             {{-- Sidebar --}}
             <div class="col-lg-4">
-                {{-- Quick Add from Low Stock --}}
-                @if($lowStockMaterials->count() > 0)
-                    <div class="card border-0 shadow-sm mb-4">
-                        <div class="card-header bg-warning bg-opacity-10">
-                            <h6 class="mb-0 text-warning">
-                                <i class="fas fa-exclamation-triangle me-2"></i>{{ __('Low Stock Materials') }}
-                            </h6>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="list-group list-group-flush" style="max-height: 300px; overflow-y: auto;">
-                                @foreach($lowStockMaterials as $material)
-                                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <div class="fw-semibold">{{ $material->name }}</div>
-                                            <small class="text-muted">
-                                                {{ __('Stock:') }} {{ $material->quantity }} / {{ $material->minimum_stock_level }} {{ $material->unit }}
-                                            </small>
-                                        </div>
-                                        <button type="button" class="btn btn-sm btn-outline-primary quick-add-btn"
-                                                data-id="{{ $material->id }}"
-                                                data-name="{{ $material->name }}"
-                                                data-unit="{{ $material->unit }}"
-                                                data-price="{{ $material->cost_per_unit }}"
-                                                data-suggested="{{ max($material->minimum_stock_level * 2 - $material->quantity, $material->minimum_stock_level) }}">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
                 {{-- Summary --}}
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-transparent">
@@ -174,9 +131,9 @@
                 <div class="card border-0 shadow-sm">
                     <div class="card-body">
                         <button type="submit" class="btn btn-primary w-100 mb-2">
-                            <i class="fas fa-save me-2"></i>{{ __('Create Purchase Order') }}
+                            <i class="fas fa-save me-2"></i>{{ __('Update Purchase Order') }}
                         </button>
-                        <a href="{{ route('purchases.index') }}" class="btn btn-outline-secondary w-100">
+                        <a href="{{ route('purchases.show', $purchase) }}" class="btn btn-outline-secondary w-100">
                             {{ __('Cancel') }}
                         </a>
                     </div>
@@ -230,54 +187,34 @@ document.addEventListener('DOMContentLoaded', function() {
     const itemsBody = document.getElementById('itemsBody');
     const template = document.getElementById('itemRowTemplate');
     
-    // Add item row
     function addItemRow(materialId = '', quantity = '', price = '') {
         const clone = template.content.cloneNode(true);
         const row = clone.querySelector('tr');
-        
-        // Replace INDEX placeholder
         row.innerHTML = row.innerHTML.replace(/INDEX/g, itemIndex);
-        
         itemsBody.appendChild(row);
         
-        // Set values if provided
         if (materialId) {
             const select = row.querySelector('.material-select');
             select.value = materialId;
-            select.dispatchEvent(new Event('change'));
+            const option = select.selectedOptions[0];
+            if (option) {
+                row.querySelector('.unit-display').textContent = option.dataset.unit || '-';
+            }
         }
-        if (quantity) {
-            row.querySelector('.quantity-input').value = quantity;
-        }
-        if (price) {
-            row.querySelector('.price-input').value = price;
-        }
+        if (quantity) row.querySelector('.quantity-input').value = quantity;
+        if (price) row.querySelector('.price-input').value = price;
         
         itemIndex++;
-        updateSummary();
         calculateLineTotal(row);
+        updateSummary();
     }
     
-    // Add item button
     document.getElementById('addItemBtn').addEventListener('click', () => addItemRow());
     
-    // Quick add from low stock
-    document.querySelectorAll('.quick-add-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            addItemRow(
-                this.dataset.id,
-                this.dataset.suggested,
-                this.dataset.price
-            );
-        });
-    });
-    
-    // Material select change
     itemsBody.addEventListener('change', function(e) {
         if (e.target.classList.contains('material-select')) {
             const row = e.target.closest('tr');
             const option = e.target.selectedOptions[0];
-            
             if (option && option.value) {
                 row.querySelector('.unit-display').textContent = option.dataset.unit || '-';
                 row.querySelector('.price-input').value = option.dataset.price || '';
@@ -286,14 +223,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Quantity/Price change
     itemsBody.addEventListener('input', function(e) {
         if (e.target.classList.contains('quantity-input') || e.target.classList.contains('price-input')) {
             calculateLineTotal(e.target.closest('tr'));
         }
     });
     
-    // Remove item
     itemsBody.addEventListener('click', function(e) {
         if (e.target.closest('.remove-item-btn')) {
             e.target.closest('tr').remove();
@@ -301,16 +236,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Calculate line total
     function calculateLineTotal(row) {
         const qty = parseFloat(row.querySelector('.quantity-input').value) || 0;
         const price = parseFloat(row.querySelector('.price-input').value) || 0;
-        const total = qty * price;
-        row.querySelector('.line-total').textContent = total.toLocaleString();
+        row.querySelector('.line-total').textContent = (qty * price).toLocaleString();
         updateSummary();
     }
     
-    // Update summary
     function updateSummary() {
         const rows = itemsBody.querySelectorAll('.item-row');
         let totalItems = rows.length;
@@ -330,23 +262,14 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('grandTotal').textContent = grandTotal.toLocaleString();
     }
     
-    // Add initial row
-    @if(isset($duplicateFrom) && $duplicateFrom->items->count() > 0)
-        @foreach($duplicateFrom->items as $item)
-            addItemRow('{{ $item->raw_material_id }}', '{{ $item->quantity }}', '{{ $item->unit_price }}');
-        @endforeach
-    @else
-        addItemRow();
-    @endif
+    // Load existing items
+    @foreach($purchase->items as $item)
+        addItemRow('{{ $item->raw_material_id }}', '{{ $item->quantity }}', '{{ $item->unit_price }}');
+    @endforeach
     
-    // Form validation
-    document.getElementById('purchaseForm').addEventListener('submit', function(e) {
-        const rows = itemsBody.querySelectorAll('.item-row');
-        if (rows.length === 0) {
-            e.preventDefault();
-            alert('{{ __("Please add at least one item.") }}');
-        }
-    });
+    if (itemsBody.querySelectorAll('.item-row').length === 0) {
+        addItemRow();
+    }
 });
 </script>
 @endpush
