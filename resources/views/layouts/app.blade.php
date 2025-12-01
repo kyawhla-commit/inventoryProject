@@ -1,7 +1,32 @@
 <!DOCTYPE html>
-<html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-bs-theme="light">
 <head>
     <title>Inventory Management System</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    {{-- Apply theme immediately to prevent flash (FOUC) --}}
+    <script>
+        (function() {
+            var STORAGE_KEY = 'app_theme';
+            var stored = localStorage.getItem(STORAGE_KEY);
+            var theme = stored || 'auto';
+            var effectiveTheme = theme;
+            
+            if (theme === 'auto') {
+                effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            
+            document.documentElement.setAttribute('data-bs-theme', effectiveTheme);
+            if (effectiveTheme === 'dark') {
+                document.documentElement.classList.add('dark-mode');
+            } else {
+                document.documentElement.classList.add('light-mode');
+            }
+        })();
+    </script>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
     <link rel="stylesheet" href="{{ asset('css/theme.css') }}">
@@ -577,9 +602,8 @@
             </a>
         </div>
         <div class="header-right">
-            <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle Dark Mode">
-                <i class="fas fa-moon"></i>
-            </button>
+            {{-- Theme Toggle with Dropdown --}}
+            @include('components.theme-toggle', ['type' => 'select', 'showIcon' => true, 'showText' => false])
             
             <div class="lang-dropdown">
                 <button class="lang-toggle dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -744,31 +768,108 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    {{-- Theme Manager - Inline for reliability --}}
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Theme Toggle Functionality
-            const toggleBtn = document.getElementById('theme-toggle');
-            if (toggleBtn) {
-                const icon = toggleBtn.querySelector('i');
-                const setTheme = (mode) => {
-                    if (mode === 'dark') {
-                        document.body.classList.add('dark-mode');
-                        icon.classList.remove('fa-moon');
-                        icon.classList.add('fa-sun');
-                    } else {
-                        document.body.classList.remove('dark-mode');
-                        icon.classList.remove('fa-sun');
-                        icon.classList.add('fa-moon');
+        // Theme Service
+        const ThemeService = {
+            STORAGE_KEY: 'app_theme',
+            THEMES: { LIGHT: 'light', DARK: 'dark', AUTO: 'auto' },
+            
+            getCurrentTheme() {
+                const stored = localStorage.getItem(this.STORAGE_KEY);
+                if (stored && Object.values(this.THEMES).includes(stored)) return stored;
+                return this.THEMES.AUTO;
+            },
+            
+            getEffectiveTheme() {
+                const theme = this.getCurrentTheme();
+                return theme === this.THEMES.AUTO ? this.getSystemTheme() : theme;
+            },
+            
+            getSystemTheme() {
+                return window.matchMedia('(prefers-color-scheme: dark)').matches ? this.THEMES.DARK : this.THEMES.LIGHT;
+            },
+            
+            saveTheme(theme) {
+                localStorage.setItem(this.STORAGE_KEY, theme);
+                window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme, effectiveTheme: this.getEffectiveTheme() } }));
+                return theme;
+            },
+            
+            watchSystemTheme(callback) {
+                const mq = window.matchMedia('(prefers-color-scheme: dark)');
+                const handler = () => { if (this.getCurrentTheme() === this.THEMES.AUTO) callback(this.getSystemTheme()); };
+                mq.addEventListener('change', handler);
+                return () => mq.removeEventListener('change', handler);
+            }
+        };
+
+        // Theme Manager
+        const themeManager = {
+            isInitialized: false,
+            
+            init() {
+                if (this.isInitialized) return;
+                this.applyTheme(ThemeService.getEffectiveTheme());
+                this.setupEventListeners();
+                ThemeService.watchSystemTheme((theme) => this.applyTheme(theme));
+                window.addEventListener('themeChanged', (e) => this.applyTheme(e.detail.effectiveTheme));
+                this.isInitialized = true;
+            },
+            
+            applyTheme(theme) {
+                const html = document.documentElement;
+                const effectiveTheme = ThemeService.getEffectiveTheme();
+                
+                html.setAttribute('data-bs-theme', effectiveTheme);
+                
+                if (effectiveTheme === 'dark') {
+                    html.classList.add('dark-mode');
+                    html.classList.remove('light-mode');
+                    document.body?.classList.add('dark-mode');
+                    document.body?.classList.remove('light-mode');
+                } else {
+                    html.classList.add('light-mode');
+                    html.classList.remove('dark-mode');
+                    document.body?.classList.add('light-mode');
+                    document.body?.classList.remove('dark-mode');
+                }
+                
+                this.updateToggleButtons(effectiveTheme);
+            },
+            
+            updateToggleButtons(theme) {
+                document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
+                    const icon = btn.querySelector('.theme-icon');
+                    if (icon) {
+                        icon.className = 'theme-icon fas ' + (theme === 'dark' ? 'fa-moon' : theme === 'light' ? 'fa-sun' : 'fa-adjust');
                     }
-                };
-                let current = localStorage.getItem('theme') || 'light';
-                setTheme(current);
-                toggleBtn.addEventListener('click', () => {
-                    current = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
-                    localStorage.setItem('theme', current);
-                    setTheme(current);
+                });
+                
+                document.querySelectorAll('[data-theme-check]').forEach(check => {
+                    check.style.visibility = check.getAttribute('data-theme-check') === ThemeService.getCurrentTheme() ? 'visible' : 'hidden';
+                });
+            },
+            
+            setupEventListeners() {
+                document.querySelectorAll('[data-theme-option]').forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const theme = option.getAttribute('data-theme-option');
+                        ThemeService.saveTheme(theme);
+                        this.applyTheme(theme);
+                    });
                 });
             }
+        };
+
+        // Make globally available
+        window.ThemeService = ThemeService;
+        window.themeManager = themeManager;
+        
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize Theme Manager
+            themeManager.init();
 
             // Left Sidebar Functionality
             const menuToggle = document.getElementById('menuToggle');

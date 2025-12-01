@@ -1,10 +1,47 @@
-/* Base light theme adjustments */
+/* ===== THEME VARIABLES ===== */
+:root {
+    --theme-bg: #f8f9fa;
+    --theme-text: #212529;
+    --theme-border: #dee2e6;
+    --theme-card-bg: #ffffff;
+    --theme-header-bg: #ffffff;
+    --theme-sidebar-bg: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    --theme-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-bs-theme="dark"],
+html.dark-mode {
+    --theme-bg: #0f172a;
+    --theme-text: #f8fafc;
+    --theme-border: #374151;
+    --theme-card-bg: rgba(30, 41, 59, 0.8);
+    --theme-header-bg: #2a2d35;
+    --theme-sidebar-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+}
+
+/* Base transitions */
 body {
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: var(--theme-transition);
+    background-color: var(--theme-bg);
+    color: var(--theme-text);
+}
+
+/* Prevent flash of light mode - apply dark background immediately via html */
+html.dark-mode,
+html[data-bs-theme="dark"] {
+    background: #0f172a;
+}
+
+html.dark-mode body,
+html[data-bs-theme="dark"] body {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    color: #f8fafc;
 }
 
 /* Enhanced Dark Mode with Professional Color Palette */
-body.dark-mode {
+body.dark-mode,
+html.dark-mode body,
+[data-bs-theme="dark"] body {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
     color: #f8fafc; /* Brighter base text color for better readability */
     min-height: 100vh;
@@ -484,4 +521,109 @@ body.dark-mode * {
 /* Specific fix for any remaining invisible text */
 body.dark-mode [class*="text-"]:not(.text-white):not(.text-light):not(.text-warning) {
     color: #e2e8f0 !important;
+}
+
+/*
+ ===== THEME TOGGLE DROPDOWN STYLES ===== */
+.theme-toggle.dropdown-toggle::after {
+    margin-left: 0.5em;
+}
+
+.theme-toggle .theme-icon {
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.theme-toggle:hover .theme-icon {
+    transform: rotate(15deg) scale(1.1);
+}
+
+/* Dark mode dropdown menu */
+[data-bs-theme="dark"] .dropdown-menu,
+.dark-mode .dropdown-menu {
+    background: rgba(30, 41, 59, 0.98) !important;
+    backdrop-filter: blur(25px);
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-bs-theme="dark"] .dropdown-item,
+.dark-mode .dropdown-item {
+    color: #e2e8f0 !important;
+}
+
+[data-bs-theme="dark"] .dropdown-item:hover,
+[data-bs-theme="dark"] .dropdown-item:focus,
+.dark-mode .dropdown-item:hover,
+.dark-mode .dropdown-item:focus {
+    background: rgba(59, 130, 246, 0.2) !important;
+    color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .dropdown-divider,
+.dark-mode .dropdown-divider {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Theme check icon */
+.theme-check {
+    color: #10b981;
+    font-size: 0.875rem;
+}
+
+/* Dark mode header styles */
+[data-bs-theme="dark"] .top-header,
+.dark-mode .top-header {
+    background: var(--theme-header-bg) !important;
+    border-bottom-color: var(--theme-border) !important;
+}
+
+[data-bs-theme="dark"] .brand-title,
+.dark-mode .brand-title {
+    color: #e4e6ea !important;
+}
+
+[data-bs-theme="dark"] .theme-toggle,
+[data-bs-theme="dark"] .lang-toggle,
+[data-bs-theme="dark"] .menu-toggle,
+.dark-mode .theme-toggle,
+.dark-mode .lang-toggle,
+.dark-mode .menu-toggle {
+    border-color: #4b5563 !important;
+    color: #9ca3af !important;
+}
+
+[data-bs-theme="dark"] .theme-toggle:hover,
+[data-bs-theme="dark"] .lang-toggle:hover,
+[data-bs-theme="dark"] .menu-toggle:hover,
+.dark-mode .theme-toggle:hover,
+.dark-mode .lang-toggle:hover,
+.dark-mode .menu-toggle:hover {
+    background: #374151 !important;
+    color: #ffffff !important;
+    border-color: #6b7280 !important;
+}
+
+[data-bs-theme="dark"] .user-menu,
+.dark-mode .user-menu {
+    color: #e4e6ea !important;
+}
+
+[data-bs-theme="dark"] .user-menu:hover,
+.dark-mode .user-menu:hover {
+    background: #374151 !important;
+    color: #ffffff !important;
+}
+
+/* Smooth theme transitions */
+*:not(.no-transition) {
+    transition: background-color 0.3s ease,
+                border-color 0.3s ease,
+                color 0.3s ease;
+}
+
+/* Focus styles for accessibility */
+:focus-visible {
+    outline: 2px solid var(--bs-primary, #3b82f6);
+    outline-offset: 2px;
 }
