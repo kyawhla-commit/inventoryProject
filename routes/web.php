@@ -275,3 +275,12 @@
             ->name('production-costs.update-actual');
     });
 
+
+Route::get('/test', function() {
+    try {
+        \DB::connection()->getPdo();
+        return "Database connected successfully!";
+    } catch (\Exception $e) {
+        return "Database connection failed: " . $e->getMessage();
+    }
+});

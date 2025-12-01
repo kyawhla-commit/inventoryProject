@@ -1,0 +1,10 @@
+<?php
+// Temporary fix for PHP 8.5 deprecation
+if (PHP_VERSION_ID >= 80500) {
+    if (!defined('PDO::MYSQL_ATTR_SSL_CA')) {
+        define('PDO::MYSQL_ATTR_SSL_CA', 1014);
+    }
+    if (!defined('PDO::MYSQL_ATTR_COMPRESS')) {
+        define('PDO::MYSQL_ATTR_COMPRESS', 1003);
+    }
+}

@@ -1,5 +1,5 @@
 <?php
-
+// require __DIR__.'/../fix-deprecated.php';
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 

@@ -2,6 +2,15 @@
 
 use Illuminate\Support\Str;
 
+// PHP 8.5+ uses Pdo\Mysql class constants instead of PDO::MYSQL_ATTR_* constants
+$mysqlSslCaAttr = class_exists('Pdo\Mysql') && defined('Pdo\Mysql::ATTR_SSL_CA') 
+    ? Pdo\Mysql::ATTR_SSL_CA 
+    : (defined('PDO::MYSQL_ATTR_SSL_CA') ? PDO::MYSQL_ATTR_SSL_CA : 1014);
+
+$mysqlCompressAttr = class_exists('Pdo\Mysql') && defined('Pdo\Mysql::ATTR_COMPRESS')
+    ? Pdo\Mysql::ATTR_COMPRESS
+    : (defined('PDO::MYSQL_ATTR_COMPRESS') ? PDO::MYSQL_ATTR_COMPRESS : 1003);
+
 return [
 
     /*
@@ -58,7 +67,7 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                $mysqlSslCaAttr => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
 
@@ -78,7 +87,7 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                $mysqlSslCaAttr => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
 
@@ -186,10 +195,10 @@ return [
     'prefix_indexes' => true,
     'strict' => false, // Less strict for better performance
     'engine' => 'InnoDB ROW_FORMAT=COMPRESSED',
-    'options' => extension_loaded('pdo_mysql') ? array_filter([
-        PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-        PDO::MYSQL_ATTR_COMPRESS => true, // Enable compression
-    ]) : [],
+    'options' => [
+        $mysqlSslCaAttr => env('MYSQL_ATTR_SSL_CA'),
+        $mysqlCompressAttr => false,
+    ],
 ],
 
 ];
