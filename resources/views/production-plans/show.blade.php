@@ -492,11 +492,14 @@
                                 </tbody>
                             </table>
                         </div>
+<<<<<<< HEAD
                     @else
                         <div class="text-center py-4">
                             <i class="fas fa-clipboard-check fa-2x text-muted mb-3"></i>
                             <p class="text-muted mb-0">No materials to check</p>
                         </div>
+=======
+>>>>>>> 2dce024ff20effa9cdbd4b32eec0a4a85180896d
                     @endif
                 </div>
             </div>

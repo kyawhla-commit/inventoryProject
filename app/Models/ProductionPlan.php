@@ -52,12 +52,10 @@ class ProductionPlan extends Model
         return $this->belongsTo(User::class, 'approved_by');
     }
 
-
     public function rawMaterialUsages()
     {
         return $this->hasMany(RawMaterialUsage::class, 'production_plan_id');
     }
-
 
     /**
      * Calculate the raw material requirements for this production plan

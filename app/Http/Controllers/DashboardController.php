@@ -129,8 +129,10 @@ class DashboardController extends Controller
             return Carbon::now()->subMonths($i)->format('Y-m');
         })->reverse();
 
-        $startDate = Carbon::now()->subMonths(11)->startOfMonth();
-        $endDate = Carbon::now()->endOfMonth();
+        $salesPerMonth = Sale::selectRaw('DATE_FORMAT(sale_date, "%Y-%m") as ym, SUM(total_amount) as total')
+            ->whereBetween('sale_date', [Carbon::now()->subMonths(11)->startOfMonth(), Carbon::now()->endOfMonth()])
+            ->groupBy('ym')
+            ->pluck('total', 'ym');
 
         if (DB::connection()->getDriverName() === 'sqlite') {
             $salesPerMonth = Sale::selectRaw('strftime("%Y-%m", sale_date) as ym, SUM(total_amount) as total')

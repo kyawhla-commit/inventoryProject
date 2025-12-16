@@ -1,0 +1,47 @@
+<svg width="400" height="120" viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="120" fill="#1e293b" rx="8"/>
+
+  <!-- Inventory Icon -->
+  <g transform="translate(20, 20)">
+    <!-- Box -->
+    <rect x="10" y="30" width="50" height="40" fill="#10b981" stroke="#065f46" stroke-width="2" rx="4"/>
+    <!-- Box top -->
+    <polygon points="10,30 35,15 60,30" fill="#059669" stroke="#047857" stroke-width="2"/>
+
+    <!-- Inventory items -->
+    <rect x="15" y="35" width="8" height="8" fill="#fbbf24" rx="1"/>
+    <rect x="25" y="35" width="8" height="8" fill="#f59e0b" rx="1"/>
+    <rect x="35" y="35" width="8" height="8" fill="#d97706" rx="1"/>
+
+    <rect x="15" y="47" width="8" height="8" fill="#ef4444" rx="1"/>
+    <rect x="25" y="47" width="8" height="8" fill="#dc2626" rx="1"/>
+    <rect x="35" y="47" width="8" height="8" fill="#b91c1c" rx="1"/>
+
+    <!-- Chart/analytics -->
+    <g transform="translate(80, 10)">
+      <!-- Chart bars -->
+      <rect x="0" y="40" width="8" height="20" fill="#3b82f6"/>
+      <rect x="12" y="35" width="8" height="25" fill="#1d4ed8"/>
+      <rect x="24" y="30" width="8" height="30" fill="#1e40af"/>
+      <rect x="36" y="25" width="8" height="35" fill="#1e3a8a"/>
+
+      <!-- Chart line -->
+      <polyline points="0,45 12,40 24,35 36,30 48,25" stroke="#60a5fa" stroke-width="3" fill="none"/>
+      <circle cx="0" cy="45" r="3" fill="#60a5fa"/>
+      <circle cx="12" cy="40" r="3" fill="#60a5fa"/>
+      <circle cx="24" cy="35" r="3" fill="#60a5fa"/>
+      <circle cx="36" cy="30" r="3" fill="#60a5fa"/>
+      <circle cx="48" cy="25" r="3" fill="#60a5fa"/>
+    </g>
+  </g>
+
+  <!-- Text -->
+  <text x="200" y="45" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#f8fafc">INVENTORY</text>
+  <text x="200" y="75" font-family="Arial, sans-serif" font-size="16" fill="#cbd5e1">MANAGEMENT SYSTEM</text>
+
+  <!-- Decorative elements -->
+  <circle cx="350" cy="30" r="15" fill="none" stroke="#10b981" stroke-width="2" opacity="0.6"/>
+  <circle cx="370" cy="50" r="10" fill="none" stroke="#3b82f6" stroke-width="2" opacity="0.6"/>
+  <circle cx="360" cy="70" r="8" fill="#10b981" opacity="0.4"/>
+</svg>
