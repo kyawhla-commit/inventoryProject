@@ -10,8 +10,18 @@
     <script>
         (function() {
             var STORAGE_KEY = 'app_theme';
+            // Check for server-side user preference first
+            var serverTheme = '{{ auth()->check() ? auth()->user()->theme_preference ?? "auto" : "auto" }}';
             var stored = localStorage.getItem(STORAGE_KEY);
-            var theme = stored || 'auto';
+            
+            // Use server preference if user is logged in and localStorage doesn't have a value
+            var theme = stored || serverTheme || 'auto';
+            
+            // Sync localStorage with server preference for logged-in users
+            if (serverTheme && serverTheme !== 'auto' && !stored) {
+                localStorage.setItem(STORAGE_KEY, serverTheme);
+            }
+            
             var effectiveTheme = theme;
             
             if (theme === 'auto') {

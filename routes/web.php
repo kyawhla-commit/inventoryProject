@@ -28,6 +28,7 @@
 
     use App\Http\Controllers\ProductionCostController;
     use App\Http\Controllers\DeliveryController;
+    use App\Http\Controllers\UserPreferenceController;
 
 
 
@@ -36,6 +37,11 @@
 use Illuminate\Support\Facades\DB;
 
     Auth::routes();
+
+    // User Preferences API (works for both auth and guest)
+    Route::post('/api/user/theme', [UserPreferenceController::class, 'updateTheme'])->name('api.user.theme');
+    Route::post('/api/user/language', [UserPreferenceController::class, 'updateLanguage'])->name('api.user.language');
+    Route::get('/api/user/preferences', [UserPreferenceController::class, 'getPreferences'])->name('api.user.preferences');
 
     Route::middleware('auth')->group(function () {
         // Temporary test route - remove after testing

@@ -179,6 +179,60 @@ class DashboardController extends Controller
             'pending_purchases' => $purchaseStats['pending'],
         ];
 
+        // ===== ENHANCED MONTHLY BUSINESS METRICS =====
+        // Monthly orders count
+        $monthlyOrdersCount = Order::whereBetween('order_date', [$startOfMonth, $endOfMonth])->count();
+        $prevMonthOrdersCount = Order::whereBetween('order_date', [$prevMonthStart, $prevMonthEnd])->count();
+        $monthlyOrdersChange = $prevMonthOrdersCount > 0 ? (($monthlyOrdersCount - $prevMonthOrdersCount) / $prevMonthOrdersCount) * 100 : 0;
+
+        // Monthly customers (new + returning)
+        $monthlyNewCustomers = Customer::whereBetween('created_at', [$startOfMonth, $endOfMonth])->count();
+        $prevMonthNewCustomers = Customer::whereBetween('created_at', [$prevMonthStart, $prevMonthEnd])->count();
+        $monthlyCustomersChange = $prevMonthNewCustomers > 0 ? (($monthlyNewCustomers - $prevMonthNewCustomers) / $prevMonthNewCustomers) * 100 : 0;
+
+        // Monthly deliveries completed
+        $monthlyDeliveriesCompleted = Delivery::whereBetween('delivered_at', [$startOfMonth, $endOfMonth])->count();
+        $prevMonthDeliveriesCompleted = Delivery::whereBetween('delivered_at', [$prevMonthStart, $prevMonthEnd])->count();
+        $monthlyDeliveriesChange = $prevMonthDeliveriesCompleted > 0 ? (($monthlyDeliveriesCompleted - $prevMonthDeliveriesCompleted) / $prevMonthDeliveriesCompleted) * 100 : 0;
+
+        // Monthly production completed
+        $monthlyProductionCompleted = ProductionPlan::whereBetween('updated_at', [$startOfMonth, $endOfMonth])
+            ->where('status', 'completed')->count();
+        $prevMonthProductionCompleted = ProductionPlan::whereBetween('updated_at', [$prevMonthStart, $prevMonthEnd])
+            ->where('status', 'completed')->count();
+        $monthlyProductionChange = $prevMonthProductionCompleted > 0 ? (($monthlyProductionCompleted - $prevMonthProductionCompleted) / $prevMonthProductionCompleted) * 100 : 0;
+
+        // Average order value
+        $monthlySalesCount = Sale::whereBetween('sale_date', [$startOfMonth, $endOfMonth])->count();
+        $avgOrderValue = $monthlySalesCount > 0 ? $currentMonthSales / $monthlySalesCount : 0;
+        $prevMonthlySalesCount = Sale::whereBetween('sale_date', [$prevMonthStart, $prevMonthEnd])->count();
+        $prevAvgOrderValue = $prevMonthlySalesCount > 0 ? $prevMonthSales / $prevMonthlySalesCount : 0;
+        $avgOrderValueChange = $prevAvgOrderValue > 0 ? (($avgOrderValue - $prevAvgOrderValue) / $prevAvgOrderValue) * 100 : 0;
+
+        // Profit margin
+        $profitMargin = $monthlyRevenue > 0 ? ($monthlyProfit / $monthlyRevenue) * 100 : 0;
+        $prevProfitMargin = $prevMonthSales > 0 ? ($prevMonthProfit / $prevMonthSales) * 100 : 0;
+        $profitMarginChange = $prevProfitMargin != 0 ? $profitMargin - $prevProfitMargin : 0;
+
+        // Monthly business summary
+        $monthlyBusinessStats = [
+            'orders_count' => $monthlyOrdersCount,
+            'orders_change' => $monthlyOrdersChange,
+            'new_customers' => $monthlyNewCustomers,
+            'customers_change' => $monthlyCustomersChange,
+            'deliveries_completed' => $monthlyDeliveriesCompleted,
+            'deliveries_change' => $monthlyDeliveriesChange,
+            'production_completed' => $monthlyProductionCompleted,
+            'production_change' => $monthlyProductionChange,
+            'avg_order_value' => $avgOrderValue,
+            'avg_order_change' => $avgOrderValueChange,
+            'profit_margin' => $profitMargin,
+            'profit_margin_change' => $profitMarginChange,
+            'sales_count' => $monthlySalesCount,
+            'staff_costs' => $monthlyStaffCosts,
+            'purchase_costs' => $monthlyPurchases,
+        ];
+
         return view('dashboard.index', compact(
             'totalProducts',
             'totalCustomers',
@@ -212,7 +266,8 @@ class DashboardController extends Controller
             'productionStats',
             'purchaseStats',
             'inventoryValue',
-            'quickActions'
+            'quickActions',
+            'monthlyBusinessStats'
         ));
     }
 

@@ -36,6 +36,36 @@
     .progress-thin {
         height: 6px;
     }
+    
+    /* Today's Performance Card - Light Mode */
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #1e40af 100%) !important;
+        color: #ffffff !important;
+        border: none;
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+    }
+    
+    .bg-gradient-primary .text-white-50 {
+        color: rgba(255, 255, 255, 0.75) !important;
+    }
+    
+    .bg-gradient-primary h6,
+    .bg-gradient-primary .h4,
+    .bg-gradient-primary span,
+    .bg-gradient-primary small {
+        color: inherit !important;
+    }
+    
+    .bg-gradient-primary i {
+        color: rgba(255, 255, 255, 0.85) !important;
+    }
+    
+    /* Dark Mode adjustments for Today's Performance */
+    .dark-mode .bg-gradient-primary,
+    [data-bs-theme="dark"] .bg-gradient-primary {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #1e3a8a 100%) !important;
+        box-shadow: 0 4px 20px rgba(37, 99, 235, 0.5);
+    }
 </style>
 @endpush
 
@@ -208,6 +238,169 @@
                         </div>
                         <div class="metric-icon {{ $monthlyProfit >= 0 ? 'bg-success' : 'bg-danger' }} bg-opacity-10 {{ $monthlyProfit >= 0 ? 'text-success' : 'text-danger' }}">
                             <i class="fas fa-{{ $monthlyProfit >= 0 ? 'trophy' : 'exclamation-triangle' }} fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Enhanced Monthly Business Overview --}}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="fas fa-calendar-alt me-2 text-primary"></i>
+                        {{ __('Monthly Business Overview') }} - {{ \Carbon\Carbon::parse($selectedMonth)->format('F Y') }}
+                    </h6>
+                    <span class="badge bg-primary">{{ $monthlyBusinessStats['sales_count'] }} {{ __('Transactions') }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {{-- Orders This Month --}}
+                        <div class="col-md-2 col-6">
+                            <div class="text-center p-3 rounded bg-primary bg-opacity-10">
+                                <div class="metric-icon bg-primary bg-opacity-25 text-primary mx-auto mb-2" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </div>
+                                <h4 class="mb-0">{{ $monthlyBusinessStats['orders_count'] }}</h4>
+                                <small class="text-muted">{{ __('Orders') }}</small>
+                                <div class="mt-1">
+                                    <small class="{{ $monthlyBusinessStats['orders_change'] >= 0 ? 'text-success' : 'text-danger' }}">
+                                        <i class="fas fa-arrow-{{ $monthlyBusinessStats['orders_change'] >= 0 ? 'up' : 'down' }} fa-xs"></i>
+                                        {{ number_format(abs($monthlyBusinessStats['orders_change']), 1) }}%
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {{-- New Customers --}}
+                        <div class="col-md-2 col-6">
+                            <div class="text-center p-3 rounded bg-success bg-opacity-10">
+                                <div class="metric-icon bg-success bg-opacity-25 text-success mx-auto mb-2" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-user-plus"></i>
+                                </div>
+                                <h4 class="mb-0">{{ $monthlyBusinessStats['new_customers'] }}</h4>
+                                <small class="text-muted">{{ __('New Customers') }}</small>
+                                <div class="mt-1">
+                                    <small class="{{ $monthlyBusinessStats['customers_change'] >= 0 ? 'text-success' : 'text-danger' }}">
+                                        <i class="fas fa-arrow-{{ $monthlyBusinessStats['customers_change'] >= 0 ? 'up' : 'down' }} fa-xs"></i>
+                                        {{ number_format(abs($monthlyBusinessStats['customers_change']), 1) }}%
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {{-- Deliveries Completed --}}
+                        <div class="col-md-2 col-6">
+                            <div class="text-center p-3 rounded bg-info bg-opacity-10">
+                                <div class="metric-icon bg-info bg-opacity-25 text-info mx-auto mb-2" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-truck-loading"></i>
+                                </div>
+                                <h4 class="mb-0">{{ $monthlyBusinessStats['deliveries_completed'] }}</h4>
+                                <small class="text-muted">{{ __('Deliveries') }}</small>
+                                <div class="mt-1">
+                                    <small class="{{ $monthlyBusinessStats['deliveries_change'] >= 0 ? 'text-success' : 'text-danger' }}">
+                                        <i class="fas fa-arrow-{{ $monthlyBusinessStats['deliveries_change'] >= 0 ? 'up' : 'down' }} fa-xs"></i>
+                                        {{ number_format(abs($monthlyBusinessStats['deliveries_change']), 1) }}%
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {{-- Production Completed --}}
+                        <div class="col-md-2 col-6">
+                            <div class="text-center p-3 rounded bg-warning bg-opacity-10">
+                                <div class="metric-icon bg-warning bg-opacity-25 text-warning mx-auto mb-2" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-industry"></i>
+                                </div>
+                                <h4 class="mb-0">{{ $monthlyBusinessStats['production_completed'] }}</h4>
+                                <small class="text-muted">{{ __('Productions') }}</small>
+                                <div class="mt-1">
+                                    <small class="{{ $monthlyBusinessStats['production_change'] >= 0 ? 'text-success' : 'text-danger' }}">
+                                        <i class="fas fa-arrow-{{ $monthlyBusinessStats['production_change'] >= 0 ? 'up' : 'down' }} fa-xs"></i>
+                                        {{ number_format(abs($monthlyBusinessStats['production_change']), 1) }}%
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {{-- Average Order Value --}}
+                        <div class="col-md-2 col-6">
+                            <div class="text-center p-3 rounded bg-secondary bg-opacity-10">
+                                <div class="metric-icon bg-secondary bg-opacity-25 text-secondary mx-auto mb-2" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-calculator"></i>
+                                </div>
+                                <h4 class="mb-0">Ks {{ number_format($monthlyBusinessStats['avg_order_value'], 0) }}</h4>
+                                <small class="text-muted">{{ __('Avg Order') }}</small>
+                                <div class="mt-1">
+                                    <small class="{{ $monthlyBusinessStats['avg_order_change'] >= 0 ? 'text-success' : 'text-danger' }}">
+                                        <i class="fas fa-arrow-{{ $monthlyBusinessStats['avg_order_change'] >= 0 ? 'up' : 'down' }} fa-xs"></i>
+                                        {{ number_format(abs($monthlyBusinessStats['avg_order_change']), 1) }}%
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {{-- Profit Margin --}}
+                        <div class="col-md-2 col-6">
+                            <div class="text-center p-3 rounded {{ $monthlyBusinessStats['profit_margin'] >= 0 ? 'bg-success' : 'bg-danger' }} bg-opacity-10">
+                                <div class="metric-icon {{ $monthlyBusinessStats['profit_margin'] >= 0 ? 'bg-success' : 'bg-danger' }} bg-opacity-25 {{ $monthlyBusinessStats['profit_margin'] >= 0 ? 'text-success' : 'text-danger' }} mx-auto mb-2" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-percentage"></i>
+                                </div>
+                                <h4 class="mb-0 {{ $monthlyBusinessStats['profit_margin'] >= 0 ? 'text-success' : 'text-danger' }}">{{ number_format($monthlyBusinessStats['profit_margin'], 1) }}%</h4>
+                                <small class="text-muted">{{ __('Profit Margin') }}</small>
+                                <div class="mt-1">
+                                    <small class="{{ $monthlyBusinessStats['profit_margin_change'] >= 0 ? 'text-success' : 'text-danger' }}">
+                                        <i class="fas fa-arrow-{{ $monthlyBusinessStats['profit_margin_change'] >= 0 ? 'up' : 'down' }} fa-xs"></i>
+                                        {{ number_format(abs($monthlyBusinessStats['profit_margin_change']), 1) }}pp
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {{-- Expense Breakdown --}}
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6 class="text-muted mb-3"><i class="fas fa-pie-chart me-2"></i>{{ __('Expense Breakdown') }}</h6>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-danger bg-opacity-10 text-danger rounded p-2 me-3">
+                                                <i class="fas fa-boxes"></i>
+                                            </div>
+                                            <div>
+                                                <small class="text-muted d-block">{{ __('Purchase Costs') }}</small>
+                                                <strong>Ks {{ number_format($monthlyBusinessStats['purchase_costs'], 0) }}</strong>
+                                            </div>
+                                        </div>
+                                        @php
+                                            $purchasePercent = $monthlyExpenses > 0 ? ($monthlyBusinessStats['purchase_costs'] / $monthlyExpenses) * 100 : 0;
+                                        @endphp
+                                        <span class="badge bg-danger">{{ number_format($purchasePercent, 0) }}%</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-warning bg-opacity-10 text-warning rounded p-2 me-3">
+                                                <i class="fas fa-users"></i>
+                                            </div>
+                                            <div>
+                                                <small class="text-muted d-block">{{ __('Staff Costs') }}</small>
+                                                <strong>Ks {{ number_format($monthlyBusinessStats['staff_costs'], 0) }}</strong>
+                                            </div>
+                                        </div>
+                                        @php
+                                            $staffPercent = $monthlyExpenses > 0 ? ($monthlyBusinessStats['staff_costs'] / $monthlyExpenses) * 100 : 0;
+                                        @endphp
+                                        <span class="badge bg-warning text-dark">{{ number_format($staffPercent, 0) }}%</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

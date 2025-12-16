@@ -6,7 +6,132 @@
     --theme-card-bg: #ffffff;
     --theme-header-bg: #ffffff;
     --theme-sidebar-bg: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-    --theme-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --theme-transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    --theme-transition-fast: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== SMOOTH THEME TRANSITION ===== */
+/* Theme transition overlay for smooth switching */
+.theme-transition-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 99999;
+    opacity: 0;
+    transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-transition-overlay.active {
+    opacity: 0.92;
+    pointer-events: all;
+}
+
+.theme-transition-overlay.to-dark {
+    background: radial-gradient(ellipse at center, #1e293b 0%, #0f172a 70%, #020617 100%);
+}
+
+.theme-transition-overlay.to-light {
+    background: radial-gradient(ellipse at center, #ffffff 0%, #f1f5f9 70%, #e2e8f0 100%);
+}
+
+/* Animated spinner during transition */
+.theme-transition-overlay::after {
+    content: '';
+    width: 48px;
+    height: 48px;
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    border-top: 3px solid rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    animation: theme-spin 0.7s linear infinite;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.theme-transition-overlay.active::after {
+    opacity: 1;
+}
+
+.theme-transition-overlay.to-light::after {
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    border-top: 3px solid rgba(59, 130, 246, 0.8);
+}
+
+@keyframes theme-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Ripple effect for theme toggle button */
+.theme-toggle {
+    position: relative;
+    overflow: hidden;
+}
+
+.theme-toggle::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(59, 130, 246, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.5s ease, height 0.5s ease;
+}
+
+.theme-toggle:active::before {
+    width: 200px;
+    height: 200px;
+}
+
+/* Smooth transitions for all theme-affected elements */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+    transition: 
+        background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+        color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+        fill 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+        stroke 0.6s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Page content subtle animation during transition */
+html.theme-transitioning .container,
+html.theme-transitioning .container-fluid,
+html.theme-transitioning main {
+    opacity: 0.85;
+    transform: scale(0.995);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+/* Staggered card animations */
+html.theme-transitioning .card:nth-child(1) { transition-delay: 0.02s; }
+html.theme-transitioning .card:nth-child(2) { transition-delay: 0.04s; }
+html.theme-transitioning .card:nth-child(3) { transition-delay: 0.06s; }
+html.theme-transitioning .card:nth-child(4) { transition-delay: 0.08s; }
+html.theme-transitioning .card:nth-child(5) { transition-delay: 0.1s; }
+html.theme-transitioning .card:nth-child(6) { transition-delay: 0.12s; }
+
+/* Navbar subtle lift during transition */
+html.theme-transitioning .navbar,
+html.theme-transitioning .top-header {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Sidebar subtle slide during transition */
+html.theme-transitioning .sidebar {
+    transform: translateX(-2px);
 }
 
 [data-bs-theme="dark"],
@@ -531,11 +656,89 @@ body.dark-mode [class*="text-"]:not(.text-white):not(.text-light):not(.text-warn
 
 .theme-toggle .theme-icon {
     font-size: 1rem;
-    transition: transform 0.3s ease;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s ease;
 }
 
 .theme-toggle:hover .theme-icon {
-    transform: rotate(15deg) scale(1.1);
+    transform: rotate(20deg) scale(1.15);
+    color: #3b82f6;
+}
+
+/* Enhanced dropdown item animations */
+.dropdown-menu .dropdown-item {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: left center;
+}
+
+.dropdown-menu .dropdown-item:hover {
+    transform: translateX(4px);
+}
+
+/* Theme check animation */
+.theme-check {
+    transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Card hover effects */
+.card {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 0.5s ease,
+                border-color 0.5s ease;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+}
+
+/* Button smooth transitions */
+.btn {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* Table row hover animation */
+.table tbody tr {
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+/* Form control focus animation */
+.form-control, .form-select {
+    transition: border-color 0.3s ease, 
+                box-shadow 0.3s ease, 
+                background-color 0.5s ease;
+}
+
+/* Alert fade animation */
+.alert {
+    animation: alertSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes alertSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Badge pulse on hover */
+.badge {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.badge:hover {
+    transform: scale(1.05);
 }
 
 /* Dark mode dropdown menu */
