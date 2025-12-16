@@ -9,9 +9,11 @@ use App\Models\Recipe;
 use App\Models\Order;
 use App\Models\RawMaterial;
 use App\Models\RawMaterialUsage;
+use App\Models\StockMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProductionPlanController extends Controller
 {
@@ -260,13 +262,24 @@ class ProductionPlanController extends Controller
                 ->with('error', 'Only approved plans can be started.');
         }
 
+        // Load relationships for validation
+        $productionPlan->load('productionPlanItems.product.rawMaterials');
+        
+        // Validate material availability before starting
+        $validation = $this->validateMaterialsForCompletion($productionPlan);
+        
+        if (!$validation['can_complete']) {
+            return redirect()->route('production-plans.show', $productionPlan)
+                ->with('warning', 'Warning: ' . $validation['message'] . '. Production started but may not complete successfully.');
+        }
+
         $productionPlan->update([
             'status' => 'in_progress',
             'actual_start_date' => now(),
         ]);
 
         return redirect()->route('production-plans.show', $productionPlan)
-            ->with('success', 'Production plan started successfully.');
+            ->with('success', 'Production plan started successfully. All materials are available.');
     }
 
 
@@ -277,72 +290,225 @@ class ProductionPlanController extends Controller
                 ->with('error', 'Only in-progress plans can be completed.');
         }
 
-        $updatedProducts = [];
-
         try {
             DB::beginTransaction();
     
-            // Reload to get fresh data
-            $productionPlan->load('productionPlanItems.product');
+            // Reload to get fresh data with all relationships
+            $productionPlan->load('productionPlanItems.product.rawMaterials');
     
-            // Update production plan status
-            $productionPlan->status = 'completed';
-            $productionPlan->actual_end_date = now();
-            $productionPlan->save();
+            // First, validate all materials are available
+            $validationResult = $this->validateMaterialsForCompletion($productionPlan);
+            if (!$validationResult['can_complete']) {
+                DB::rollBack();
+                return redirect()->back()
+                    ->with('error', 'Cannot complete production: ' . $validationResult['message']);
+            }
+
+            $updatedProducts = [];
+            $deductedMaterials = [];
+            $totalMaterialCost = 0;
+            $itemMaterialCosts = [];
     
-            // Add produced quantities to products
+            // Process each production item
             foreach ($productionPlan->productionPlanItems as $planItem) {
-                // Always use planned_quantity as actual_quantity when completing
-                $quantityToAdd = $planItem->planned_quantity;
+                $quantityToAdd = $planItem->planned_quantity ?? 0;
                 
-                if ($quantityToAdd > 0 && $planItem->product) {
-                    // Get current stock before update
-                    $oldStock = $planItem->product->quantity;
+                if ($quantityToAdd <= 0 || !$planItem->product) {
+                    continue;
+                }
+
+                $product = $planItem->product;
+                $itemCost = 0;
+                
+                // Deduct raw materials for this product
+                foreach ($product->rawMaterials as $rawMaterial) {
+                    $pivot = $rawMaterial->pivot;
+                    $requiredQty = ($pivot->quantity_required ?? 0) * $quantityToAdd;
+                    $wasteQty = $requiredQty * (($pivot->waste_percentage ?? 0) / 100);
+                    $totalRequired = $requiredQty + $wasteQty;
                     
-                    // Update stock
-                    $planItem->product->increment('quantity', $quantityToAdd);
+                    if ($totalRequired <= 0) {
+                        continue;
+                    }
                     
-                    // Refresh to get new stock
-                    $planItem->product->refresh();
-                    $newStock = $planItem->product->quantity;
+                    // Final check for stock availability
+                    if ($rawMaterial->quantity < $totalRequired) {
+                        throw new \Exception(
+                            "Insufficient stock for {$rawMaterial->name}. " .
+                            "Required: " . number_format($totalRequired, 2) . " {$rawMaterial->unit}, " .
+                            "Available: " . number_format($rawMaterial->quantity, 2) . " {$rawMaterial->unit}"
+                        );
+                    }
                     
-                    // Track updated products for confirmation message
-                    $updatedProducts[] = [
-                        'name' => $planItem->product->name,
-                        'added' => $quantityToAdd,
-                        'old_stock' => $oldStock,
-                        'new_stock' => $newStock,
+                    // Calculate cost
+                    $costPerUnit = $pivot->cost_per_unit ?? $rawMaterial->cost_per_unit ?? 0;
+                    $materialCost = $totalRequired * $costPerUnit;
+                    
+                    // Deduct stock
+                    $rawMaterial->decrement('quantity', $totalRequired);
+                    
+                    // Record material usage
+                    RawMaterialUsage::create([
+                        'raw_material_id' => $rawMaterial->id,
+                        'product_id' => $product->id,
+                        'quantity_used' => $totalRequired,
+                        'cost_per_unit' => $costPerUnit,
+                        'total_cost' => $materialCost,
+                        'usage_date' => now(),
+                        'usage_type' => 'production',
+                        'batch_number' => $productionPlan->plan_number,
+                        'notes' => "Production Plan #{$productionPlan->plan_number}: {$quantityToAdd} x {$product->name}",
+                        'recorded_by' => Auth::id(),
+                    ]);
+                    
+                    // Record stock movement for audit trail
+                    StockMovement::create([
+                        'raw_material_id' => $rawMaterial->id,
+                        'type' => 'usage',
+                        'quantity' => -$totalRequired,
+                        'unit_price' => $costPerUnit,
+                        'reference_type' => ProductionPlan::class,
+                        'reference_id' => $productionPlan->id,
+                        'notes' => "Production: {$product->name} (Plan: {$productionPlan->plan_number})",
+                        'created_by' => Auth::id(),
+                    ]);
+                    
+                    $deductedMaterials[] = [
+                        'name' => $rawMaterial->name,
+                        'quantity' => $totalRequired,
+                        'unit' => $rawMaterial->unit,
+                        'cost' => $materialCost,
                     ];
                     
-                    // Update plan item status and set actual_quantity equal to planned_quantity
-                    $planItem->status = 'completed';
-                    $planItem->actual_quantity = $quantityToAdd;
-                    $planItem->actual_end_date = now();
-                    $planItem->save();
+                    $itemCost += $materialCost;
+                    $totalMaterialCost += $materialCost;
                 }
+                
+                // Store item cost for later update
+                $itemMaterialCosts[$planItem->id] = $itemCost;
+                
+                // Get current stock before update
+                $oldStock = $product->quantity;
+                
+                // Add finished product to stock
+                $product->increment('quantity', $quantityToAdd);
+                
+                // Record stock movement for finished product
+                StockMovement::create([
+                    'product_id' => $product->id,
+                    'type' => 'production',
+                    'quantity' => $quantityToAdd,
+                    'unit_price' => $product->cost ?? 0,
+                    'reference_type' => ProductionPlan::class,
+                    'reference_id' => $productionPlan->id,
+                    'notes' => "Production output (Plan: {$productionPlan->plan_number})",
+                    'created_by' => Auth::id(),
+                ]);
+                
+                // Refresh to get new stock
+                $product->refresh();
+                
+                // Track updated products
+                $updatedProducts[] = [
+                    'name' => $product->name,
+                    'added' => $quantityToAdd,
+                    'old_stock' => $oldStock,
+                    'new_stock' => $product->quantity,
+                    'material_cost' => $itemCost,
+                ];
+                
+                // Update plan item
+                $planItem->update([
+                    'status' => 'completed',
+                    'actual_quantity' => $quantityToAdd,
+                    'actual_material_cost' => $itemCost,
+                    'actual_end_date' => now(),
+                ]);
             }
+
+            // Update production plan status and costs
+            $productionPlan->update([
+                'status' => 'completed',
+                'actual_end_date' => now(),
+                'total_actual_cost' => $totalMaterialCost,
+            ]);
     
             DB::commit();
     
             // Create detailed success message
-            $message = 'Production plan completed successfully! Stock updated for ' . count($updatedProducts) . ' product(s):';
-            foreach ($updatedProducts as $product) {
-                $message .= sprintf(
-                    " %s (+%s, now %s)",
-                    $product['name'],
-                    number_format($product['added'], 2),
-                    number_format($product['new_stock'], 2)
-                );
-            }
+            $message = '✓ Production completed successfully! ';
+            $message .= count($updatedProducts) . ' product(s) added to stock. ';
+            $message .= count($deductedMaterials) . ' material(s) deducted. ';
+            $message .= 'Total cost: ' . number_format($totalMaterialCost, 0) . ' Ks';
     
             return redirect()->route('production-plans.show', $productionPlan)
                 ->with('success', $message);
     
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Production completion failed: ' . $e->getMessage(), [
+                'plan_id' => $productionPlan->id,
+                'trace' => $e->getTraceAsString()
+            ]);
             return redirect()->back()
-                ->with('error', 'Failed to complete production plan: ' . $e->getMessage());
+                ->with('error', 'Failed to complete production: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Validate all materials are available before completing production
+     */
+    protected function validateMaterialsForCompletion(ProductionPlan $plan): array
+    {
+        $requirements = [];
+        $shortages = [];
+        
+        foreach ($plan->productionPlanItems as $planItem) {
+            if (!$planItem->product) continue;
+            
+            $quantity = $planItem->planned_quantity ?? 0;
+            
+            foreach ($planItem->product->rawMaterials as $rawMaterial) {
+                $pivot = $rawMaterial->pivot;
+                $requiredQty = ($pivot->quantity_required ?? 0) * $quantity;
+                $wasteQty = $requiredQty * (($pivot->waste_percentage ?? 0) / 100);
+                $totalRequired = $requiredQty + $wasteQty;
+                
+                // Aggregate requirements by material
+                if (!isset($requirements[$rawMaterial->id])) {
+                    $requirements[$rawMaterial->id] = [
+                        'material' => $rawMaterial,
+                        'total_required' => 0,
+                    ];
+                }
+                $requirements[$rawMaterial->id]['total_required'] += $totalRequired;
+            }
+        }
+        
+        // Check for shortages
+        foreach ($requirements as $materialId => $req) {
+            $material = $req['material'];
+            $shortage = $req['total_required'] - $material->quantity;
+            
+            if ($shortage > 0) {
+                $shortages[] = "{$material->name}: need " . number_format($req['total_required'], 2) . 
+                              " {$material->unit}, have " . number_format($material->quantity, 2);
+            }
+        }
+        
+        if (!empty($shortages)) {
+            return [
+                'can_complete' => false,
+                'message' => 'Insufficient materials: ' . implode('; ', $shortages),
+                'shortages' => $shortages,
+            ];
+        }
+        
+        return [
+            'can_complete' => true,
+            'message' => 'All materials available',
+            'shortages' => [],
+        ];
     }
     
 

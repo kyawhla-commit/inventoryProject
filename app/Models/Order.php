@@ -14,17 +14,39 @@ class Order extends Model
      */
     public const STATUS_BADGE_CLASSES = [
         'pending'    => 'warning',
+        'confirmed'  => 'info',
         'processing' => 'primary',
         'shipped'    => 'info',
         'completed'  => 'success',
         'cancelled'  => 'danger',
     ];
 
+    // Status constants
+    const STATUS_PENDING = 'pending';
+    const STATUS_CONFIRMED = 'confirmed';
+    const STATUS_PROCESSING = 'processing';
+    const STATUS_SHIPPED = 'shipped';
+    const STATUS_COMPLETED = 'completed';
+    const STATUS_CANCELLED = 'cancelled';
+
+    public static function getStatuses(): array
+    {
+        return [
+            self::STATUS_PENDING => __('Pending'),
+            self::STATUS_CONFIRMED => __('Confirmed'),
+            self::STATUS_PROCESSING => __('Processing'),
+            self::STATUS_SHIPPED => __('Shipped'),
+            self::STATUS_COMPLETED => __('Completed'),
+            self::STATUS_CANCELLED => __('Cancelled'),
+        ];
+    }
+
     protected $fillable = [
         'customer_id',
         'order_date',
         'total_amount',
         'status',
+        'notes',
     ];
 
     protected $casts = [
@@ -68,6 +90,11 @@ class Order extends Model
     public function purchases()
     {
         return $this->hasMany(Purchase::class);
+    }
+
+    public function delivery()
+    {
+        return $this->hasOne(Delivery::class);
     }
 
     /**

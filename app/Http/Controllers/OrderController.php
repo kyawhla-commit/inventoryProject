@@ -3,12 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\Product;
+use App\Models\Customer;
+use App\Services\OrderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
+    protected OrderService $orderService;
+
+    public function __construct(OrderService $orderService)
+    {
+        $this->orderService = $orderService;
+    }
     /**
      * Display a listing of the resource.
      */
@@ -34,8 +43,11 @@ class OrderController extends Controller
      */
     public function create()
     {
-        $customers = \App\Models\Customer::all();
-        $products  = \App\Models\Product::all();
+        $customers = Customer::orderBy('name')->get();
+        $products = Product::with('category')
+            ->orderBy('name')
+            ->get();
+        
         return view('orders.create', compact('customers', 'products'));
     }
 
@@ -130,7 +142,7 @@ class OrderController extends Controller
     public function update(Request $request, Order $order)
     {
         $request->validate([
-            'status' => 'required|string|in:pending,processing,shipped,completed,cancelled',
+            'status' => 'required|string|in:pending,confirmed,processing,shipped,completed,cancelled',
             'items' => 'sometimes|string',
             'notes' => 'nullable|string',
         ]);
@@ -218,21 +230,67 @@ class OrderController extends Controller
     }
 
     /**
+     * Confirm order - validates stock and reserves it
+     */
+    public function confirm(Order $order)
+    {
+        try {
+            $this->orderService->confirmOrder($order);
+            
+            return redirect()->route('orders.show', $order)
+                ->with('success', __('Order confirmed successfully. Stock has been reserved.'));
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', __('Failed to confirm order: ') . $e->getMessage());
+        }
+    }
+
+    /**
+     * Cancel order - restores stock if reserved
+     */
+    public function cancel(Request $request, Order $order)
+    {
+        try {
+            $reason = $request->input('reason');
+            $this->orderService->cancelOrder($order, $reason);
+            
+            return redirect()->route('orders.show', $order)
+                ->with('success', __('Order cancelled successfully. Stock has been restored.'));
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', __('Failed to cancel order: ') . $e->getMessage());
+        }
+    }
+
+    /**
      * Convert order to sale
      */
     public function convertToSale(Order $order)
     {
         try {
-            $sale = $order->convertToSale();
-            
-            // Update order status
-            $order->update(['status' => 'completed']);
+            $sale = $this->orderService->convertToSale($order);
             
             return redirect()->route('sales.show', $sale)
-                ->with('success', 'Order converted to sale successfully.');
+                ->with('success', __('Order converted to sale successfully.'));
         } catch (\Exception $e) {
             return redirect()->back()
-                ->with('error', 'Failed to convert order to sale: ' . $e->getMessage());
+                ->with('error', __('Failed to convert order to sale: ') . $e->getMessage());
+        }
+    }
+
+    /**
+     * Create invoice for order
+     */
+    public function createInvoice(Order $order)
+    {
+        try {
+            $invoice = $this->orderService->createInvoice($order);
+            
+            return redirect()->route('invoices.show', $invoice)
+                ->with('success', __('Invoice created successfully.'));
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', __('Failed to create invoice: ') . $e->getMessage());
         }
     }
 

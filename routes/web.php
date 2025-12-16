@@ -22,10 +22,12 @@
     use App\Http\Controllers\ProductionMaterialUsageController;
     use App\Http\Controllers\StaffController;
     use App\Http\Controllers\ProductRawMaterialController;
+    use App\Http\Controllers\StockManagementController;
 
 
 
     use App\Http\Controllers\ProductionCostController;
+    use App\Http\Controllers\DeliveryController;
 
 
 
@@ -78,6 +80,8 @@ use Illuminate\Support\Facades\DB;
         Route::middleware('role:admin,staff')->group(function () {
             // Product Management
             Route::resource('products', ProductController::class);
+            Route::post('products/{product}/adjust-stock', [ProductController::class, 'adjustStock'])->name('products.adjust-stock');
+            Route::get('products/{product}/duplicate', [ProductController::class, 'duplicate'])->name('products.duplicate');
             
             // Product Raw Material Relationships
             Route::get('products/{product}/raw-materials', [ProductRawMaterialController::class, 'index'])->name('products.raw-materials.index');
@@ -91,6 +95,8 @@ use Illuminate\Support\Facades\DB;
             
             // Purchase & Sales
             Route::resource('purchases', PurchaseController::class);
+            Route::post('purchases/{purchase}/approve', [PurchaseController::class, 'approve'])->name('purchases.approve');
+            Route::post('purchases/{purchase}/confirm', [PurchaseController::class, 'confirm'])->name('purchases.confirm');
             Route::post('purchases/{purchase}/receive', [PurchaseController::class, 'receive'])->name('purchases.receive');
             Route::post('purchases/{purchase}/cancel', [PurchaseController::class, 'cancel'])->name('purchases.cancel');
             Route::get('purchases/{purchase}/duplicate', [PurchaseController::class, 'duplicate'])->name('purchases.duplicate');
@@ -131,6 +137,22 @@ use Illuminate\Support\Facades\DB;
             // Production Dashboard
             Route::get('production-dashboard', [ProductionDashboardController::class, 'index'])->name('production-plans.dashboard');
             
+            // Stock Management
+            Route::get('stock-management', [StockManagementController::class, 'index'])->name('stock-management.index');
+            Route::get('stock-management/add-raw-material', [StockManagementController::class, 'addRawMaterialForm'])->name('stock-management.add-raw-material');
+            Route::post('stock-management/add-raw-material', [StockManagementController::class, 'addRawMaterialStock'])->name('stock-management.add-raw-material.store');
+            Route::get('stock-management/add-product', [StockManagementController::class, 'addProductForm'])->name('stock-management.add-product');
+            Route::post('stock-management/add-product', [StockManagementController::class, 'addProductStock'])->name('stock-management.add-product.store');
+            Route::get('stock-management/deduct', [StockManagementController::class, 'deductForm'])->name('stock-management.deduct');
+            Route::post('stock-management/deduct-raw-material', [StockManagementController::class, 'deductRawMaterialStock'])->name('stock-management.deduct-raw-material');
+            Route::post('stock-management/deduct-product', [StockManagementController::class, 'deductProductStock'])->name('stock-management.deduct-product');
+            Route::get('stock-management/movements', [StockManagementController::class, 'movements'])->name('stock-management.movements');
+            Route::get('stock-management/valuation', [StockManagementController::class, 'valuation'])->name('stock-management.valuation');
+            Route::get('stock-management/bulk-adjustment', [StockManagementController::class, 'bulkAdjustmentForm'])->name('stock-management.bulk-adjustment');
+            Route::post('stock-management/bulk-adjustment', [StockManagementController::class, 'bulkAdjustment'])->name('stock-management.bulk-adjustment.store');
+            Route::get('stock-management/view-all', [StockManagementController::class, 'viewAllStock'])->name('stock-management.view-all');
+            Route::get('stock-management/export', [StockManagementController::class, 'exportStock'])->name('stock-management.export');
+            
             // Production Material Usage
             Route::get('/production-material-usage', [ProductionMaterialUsageController::class, 'index'])
                 ->name('production-material-usage.index');
@@ -158,10 +180,20 @@ use Illuminate\Support\Facades\DB;
             
             // Orders & Invoices
             Route::resource('orders', OrderController::class);
+            Route::post('orders/{order}/confirm', [OrderController::class, 'confirm'])->name('orders.confirm');
+            Route::post('orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
             Route::post('orders/{order}/convert-to-sale', [OrderController::class, 'convertToSale'])->name('orders.convert-to-sale');
+            Route::post('orders/{order}/create-invoice', [OrderController::class, 'createInvoice'])->name('orders.create-invoice');
             Route::get('orders/{order}/create-purchase', [OrderController::class, 'createPurchaseForm'])->name('orders.create-purchase-form');
             Route::post('orders/{order}/create-purchase', [OrderController::class, 'createPurchase'])->name('orders.create-purchase');
             
+            // Deliveries
+            Route::get('deliveries/dashboard', [DeliveryController::class, 'dashboard'])->name('deliveries.dashboard');
+            Route::resource('deliveries', DeliveryController::class);
+            Route::post('deliveries/{delivery}/status', [DeliveryController::class, 'updateStatus'])->name('deliveries.update-status');
+            Route::post('deliveries/{delivery}/assign-driver', [DeliveryController::class, 'assignDriver'])->name('deliveries.assign-driver');
+            Route::post('deliveries/{delivery}/cancel', [DeliveryController::class, 'cancel'])->name('deliveries.cancel');
+
             // Invoices
             Route::resource('invoices', InvoiceController::class);
             Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'generatePdf'])->name('invoices.pdf');

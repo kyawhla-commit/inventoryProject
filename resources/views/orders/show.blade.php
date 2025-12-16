@@ -2,41 +2,110 @@
 
 @section('content')
 <div class="container">
+    {{-- Flash Messages --}}
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>{{__('Order')}} #{{ $order->id }} {{__('Details')}}</h1>
-        <div>
-            @if($order->invoice)
-                <a href="{{ route('invoices.show', $order->invoice) }}" class="btn btn-success me-2">
-                    <i class="fas fa-file-invoice"></i> {{ __('View Invoice') }}
-                </a>
-                <a href="{{ route('invoices.pdf', $order->invoice) }}" class="btn btn-info me-2">
-                    <i class="fas fa-download"></i> {{ __('Download Invoice') }}
-                </a>
-                <button type="button" class="btn btn-primary me-2" onclick="printInvoice({{ $order->invoice->id }})">
-                    <i class="fas fa-print"></i> {{ __('Print Invoice') }}
-                </button>
-            @else
-                <form method="POST" action="{{ route('invoices.create-from-order', $order) }}" style="display: inline;">
-                    @csrf
-                    <button type="submit" class="btn btn-success me-2">
-                        <i class="fas fa-file-invoice"></i> {{ __('Create Invoice') }}
+        <a href="{{ route('orders.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> {{__('Back to Orders')}}
+        </a>
+    </div>
+
+    {{-- Order Status Actions Card --}}
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>{{__('Order Actions')}}</h5>
+        </div>
+        <div class="card-body">
+            <div class="d-flex flex-wrap gap-2">
+                {{-- Confirm Order --}}
+                @if($order->status === 'pending')
+                    <form method="POST" action="{{ route('orders.confirm', $order) }}" style="display: inline;">
+                        @csrf
+                        <button type="submit" class="btn btn-success" onclick="return confirm('{{ __('Confirm this order? Stock will be reserved.') }}')">
+                            <i class="fas fa-check"></i> {{ __('Confirm Order') }}
+                        </button>
+                    </form>
+                @endif
+
+                {{-- Edit Order --}}
+                @if(in_array($order->status, ['pending', 'confirmed']))
+                    <a href="{{ route('orders.edit', $order) }}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> {{ __('Edit Order') }}
+                    </a>
+                @endif
+
+                {{-- Convert to Sale --}}
+                @if($order->sales->count() == 0 && in_array($order->status, ['confirmed', 'processing', 'shipped']))
+                    <form method="POST" action="{{ route('orders.convert-to-sale', $order) }}" style="display: inline;">
+                        @csrf
+                        <button type="submit" class="btn btn-warning" onclick="return confirm('{{ __('Convert this order to a sale?') }}')">
+                            <i class="fas fa-cash-register"></i> {{ __('Convert to Sale') }}
+                        </button>
+                    </form>
+                @endif
+
+                {{-- Create Invoice --}}
+                @if(!$order->invoice && $order->status !== 'cancelled')
+                    <form method="POST" action="{{ route('orders.create-invoice', $order) }}" style="display: inline;">
+                        @csrf
+                        <button type="submit" class="btn btn-info">
+                            <i class="fas fa-file-invoice"></i> {{ __('Create Invoice') }}
+                        </button>
+                    </form>
+                @endif
+
+                {{-- View Invoice --}}
+                @if($order->invoice)
+                    <a href="{{ route('invoices.show', $order->invoice) }}" class="btn btn-success">
+                        <i class="fas fa-file-invoice"></i> {{ __('View Invoice') }}
+                    </a>
+                    <a href="{{ route('invoices.pdf', $order->invoice) }}" class="btn btn-outline-info">
+                        <i class="fas fa-download"></i> {{ __('Download PDF') }}
+                    </a>
+                    <button type="button" class="btn btn-outline-primary" onclick="printInvoice({{ $order->invoice->id }})">
+                        <i class="fas fa-print"></i> {{ __('Print') }}
                     </button>
-                </form>
-            @endif
-            
-            @if($order->sales->count() == 0 && $order->status != 'cancelled')
-                <form method="POST" action="{{ route('orders.convert-to-sale', $order) }}" style="display: inline;">
-                    @csrf
-                    <button type="submit" class="btn btn-warning me-2" onclick="return confirm('{{ __('Convert this order to a sale? This will update inventory.') }}')">
-                        <i class="fas fa-cash-register"></i> {{ __('Convert to Sale') }}
+                @endif
+
+                {{-- Create Purchase Order --}}
+                @if($order->status !== 'cancelled')
+                    <a href="{{ route('orders.create-purchase-form', $order) }}" class="btn btn-secondary">
+                        <i class="fas fa-shopping-cart"></i> {{ __('Create Purchase Order') }}
+                    </a>
+                @endif
+
+                {{-- Create/View Delivery --}}
+                @if($order->delivery)
+                    <a href="{{ route('deliveries.show', $order->delivery) }}" class="btn btn-info">
+                        <i class="fas fa-truck"></i> {{ __('View Delivery') }}
+                        <span class="badge bg-{{ $order->delivery->status_badge_class }} ms-1">{{ $order->delivery->status_label }}</span>
+                    </a>
+                @elseif(in_array($order->status, ['confirmed', 'processing', 'shipped']))
+                    <a href="{{ route('deliveries.create', ['order_id' => $order->id]) }}" class="btn btn-outline-info">
+                        <i class="fas fa-truck"></i> {{ __('Create Delivery') }}
+                    </a>
+                @endif
+
+                {{-- Cancel Order --}}
+                @if(!in_array($order->status, ['completed', 'cancelled']))
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                        <i class="fas fa-times"></i> {{ __('Cancel Order') }}
                     </button>
-                </form>
-            @endif
-            
-            <a href="{{ route('orders.create-purchase-form', $order) }}" class="btn btn-secondary me-2">
-                <i class="fas fa-shopping-cart"></i> {{ __('Create Purchase Order') }}
-            </a>
-            <a href="{{ route('orders.index') }}" class="btn btn-secondary">{{__('Back to Orders')}}</a>
+                @endif
+            </div>
         </div>
     </div>
 
@@ -215,8 +284,49 @@
                             </tr>
                         @endforeach
                     </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="4" class="text-end"><strong>{{__('Total')}}:</strong></td>
+                            <td class="text-end"><strong>@money($order->total_amount)</strong></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
+        </div>
+    </div>
+</div>
+
+{{-- Cancel Order Modal --}}
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-times-circle me-2"></i>{{ __('Cancel Order') }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ route('orders.cancel', $order) }}">
+                @csrf
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        {{ __('Are you sure you want to cancel this order? This action cannot be undone.') }}
+                        @if(in_array($order->status, ['confirmed', 'processing', 'shipped']))
+                            <br><strong>{{ __('Stock that was reserved will be restored.') }}</strong>
+                        @endif
+                    </div>
+                    <div class="mb-3">
+                        <label for="cancel_reason" class="form-label">{{ __('Cancellation Reason') }}</label>
+                        <textarea class="form-control" id="cancel_reason" name="reason" rows="3" 
+                                  placeholder="{{ __('Enter reason for cancellation (optional)') }}"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times"></i> {{ __('Cancel Order') }}
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

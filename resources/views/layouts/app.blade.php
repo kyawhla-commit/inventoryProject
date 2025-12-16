@@ -691,6 +691,9 @@
 
                     <div class="nav-section">
                         <div class="nav-section-title">{{ __('Inventory') }}</div>
+                        <a href="{{ route('stock-management.index') }}" class="nav-item-custom {{ request()->routeIs('stock-management.*') ? 'active' : '' }}">
+                            <i class="fas fa-warehouse"></i>{{ __('Stock Management') }}
+                        </a>
                         <a href="{{ route('purchases.index') }}" class="nav-item-custom {{ request()->routeIs('purchases.*') ? 'active' : '' }}">
                             <i class="fas fa-shopping-bag"></i>{{ __('Purchases') }}
                         </a>

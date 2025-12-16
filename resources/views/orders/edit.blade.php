@@ -106,6 +106,7 @@
                         <label for="status" class="form-label">{{__('Order Status')}}</label>
                         <select class="form-select" id="status" name="status_display" onchange="document.getElementById('order-status').value = this.value">
                             <option value="pending" {{ $order->status === 'pending' ? 'selected' : '' }}>{{__('Pending')}}</option>
+                            <option value="confirmed" {{ $order->status === 'confirmed' ? 'selected' : '' }}>{{__('Confirmed')}}</option>
                             <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>{{__('Processing')}}</option>
                             <option value="shipped" {{ $order->status === 'shipped' ? 'selected' : '' }}>{{__('Shipped')}}</option>
                             <option value="completed" {{ $order->status === 'completed' ? 'selected' : '' }}>{{__('Completed')}}</option>

@@ -70,20 +70,28 @@ class ProductionPlan extends Model
         
         foreach ($this->productionPlanItems as $item) {
             $product = $item->product;
-            $quantity = $item->quantity;
+            if (!$product) continue;
+            
+            $quantity = $item->planned_quantity ?? $item->quantity ?? 0;
             
             // Get raw materials for this product
             $productRawMaterials = $product->rawMaterials;
             
             foreach ($productRawMaterials as $rawMaterial) {
                 $pivot = $rawMaterial->pivot;
-                $requiredQuantity = $pivot->quantity_required * $quantity;
+                $requiredQuantity = ($pivot->quantity_required ?? 0) * $quantity;
+                $wasteQuantity = $requiredQuantity * (($pivot->waste_percentage ?? 0) / 100);
+                $totalRequired = $requiredQuantity + $wasteQuantity;
+                $costPerUnit = $pivot->cost_per_unit ?? $rawMaterial->cost_per_unit ?? 0;
+                $estimatedCost = $totalRequired * $costPerUnit;
                 
                 // If this raw material is already in requirements, add to it
                 $found = false;
                 foreach ($requirements as &$req) {
                     if ($req['raw_material_id'] == $rawMaterial->id) {
                         $req['quantity_required'] += $requiredQuantity;
+                        $req['total_required'] += $totalRequired;
+                        $req['estimated_cost'] += $estimatedCost;
                         $found = true;
                         break;
                     }
@@ -93,10 +101,15 @@ class ProductionPlan extends Model
                 if (!$found) {
                     $requirements[] = [
                         'raw_material_id' => $rawMaterial->id,
+                        'raw_material' => $rawMaterial, // Include the full object for view access
                         'raw_material_name' => $rawMaterial->name,
                         'quantity_required' => $requiredQuantity,
+                        'total_required' => $totalRequired,
                         'unit' => $rawMaterial->unit,
                         'available' => $rawMaterial->quantity,
+                        'cost_per_unit' => $costPerUnit,
+                        'estimated_cost' => $estimatedCost,
+                        'is_sufficient' => $rawMaterial->quantity >= $totalRequired,
                     ];
                 }
             }

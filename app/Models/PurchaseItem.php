@@ -57,11 +57,19 @@ class PurchaseItem extends Model
     }
 
     /**
+     * Product relationship (for legacy support, though purchases are primarily for raw materials)
+     */
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    /**
      * Get the item name
      */
     public function getItemNameAttribute(): string
     {
-        return $this->rawMaterial?->name ?? 'Unknown Item';
+        return $this->rawMaterial?->name ?? $this->product?->name ?? 'Unknown Item';
     }
 
     /**

@@ -3,14 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Purchase;
-use App\Models\PurchaseItem;
 use App\Models\RawMaterial;
 use App\Models\Supplier;
-use App\Models\StockMovement;
 use App\Services\PurchaseService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class PurchaseController extends Controller
 {
@@ -116,18 +113,41 @@ class PurchaseController extends Controller
         ]);
 
         try {
+            // Filter out empty items
+            $items = array_filter($validated['items'], function($item) {
+                return !empty($item['raw_material_id']) && 
+                       !empty($item['quantity']) && 
+                       isset($item['unit_price']);
+            });
+
+            if (empty($items)) {
+                return back()
+                    ->withInput()
+                    ->with('error', __('Please add at least one valid item.'));
+            }
+
             $purchase = $this->purchaseService->createRawMaterialPurchase([
                 'supplier_id' => $validated['supplier_id'],
                 'purchase_date' => $validated['purchase_date'],
                 'status' => $validated['status'] ?? 'pending',
                 'notes' => $validated['notes'] ?? null,
-                'items' => $validated['items'],
+                'items' => array_values($items), // Re-index array
             ]);
+
+            $message = __('Purchase order :number created successfully.', ['number' => $purchase->purchase_number]);
+            
+            if ($purchase->status === 'received') {
+                $message .= ' ' . __('Stock has been updated.');
+            }
 
             return redirect()
                 ->route('purchases.show', $purchase)
-                ->with('success', __('Purchase order created successfully.'));
+                ->with('success', $message);
         } catch (\Exception $e) {
+            Log::error('Purchase creation failed: ' . $e->getMessage(), [
+                'data' => $validated,
+                'trace' => $e->getTraceAsString()
+            ]);
             return back()
                 ->withInput()
                 ->with('error', __('Failed to create purchase order: ') . $e->getMessage());
@@ -223,9 +243,57 @@ class PurchaseController extends Controller
     }
 
     /**
+     * Approve a pending purchase order
+     */
+    public function approve(Purchase $purchase)
+    {
+        if ($purchase->status !== Purchase::STATUS_PENDING) {
+            return redirect()
+                ->route('purchases.show', $purchase)
+                ->with('error', __('Only pending purchases can be approved.'));
+        }
+
+        try {
+            $this->purchaseService->approvePurchase($purchase);
+
+            return redirect()
+                ->route('purchases.show', $purchase)
+                ->with('success', __('Purchase order approved successfully.'));
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('purchases.show', $purchase)
+                ->with('error', __('Failed to approve purchase: ') . $e->getMessage());
+        }
+    }
+
+    /**
+     * Confirm a purchase order (approve and mark ready for receiving)
+     */
+    public function confirm(Purchase $purchase)
+    {
+        if (!in_array($purchase->status, [Purchase::STATUS_PENDING, Purchase::STATUS_APPROVED])) {
+            return redirect()
+                ->route('purchases.show', $purchase)
+                ->with('error', __('This purchase order cannot be confirmed.'));
+        }
+
+        try {
+            $this->purchaseService->confirmPurchase($purchase);
+
+            return redirect()
+                ->route('purchases.show', $purchase)
+                ->with('success', __('Purchase order confirmed successfully.'));
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('purchases.show', $purchase)
+                ->with('error', __('Failed to confirm purchase: ') . $e->getMessage());
+        }
+    }
+
+    /**
      * Receive stock from purchase
      */
-    public function receive(Purchase $purchase)
+    public function receive(Request $request, Purchase $purchase)
     {
         if (!$purchase->canReceive()) {
             return redirect()
@@ -234,11 +302,18 @@ class PurchaseController extends Controller
         }
 
         try {
-            $this->purchaseService->receiveStock($purchase);
+            // Check if partial receive
+            if ($request->has('partial') && $request->has('received_quantities')) {
+                $this->purchaseService->partialReceive($purchase, $request->received_quantities);
+                $message = __('Partial stock received successfully.');
+            } else {
+                $this->purchaseService->receiveStock($purchase);
+                $message = __('Stock received successfully. Raw material quantities have been updated.');
+            }
 
             return redirect()
                 ->route('purchases.show', $purchase)
-                ->with('success', __('Stock received successfully. Raw material quantities have been updated.'));
+                ->with('success', $message);
         } catch (\Exception $e) {
             return redirect()
                 ->route('purchases.show', $purchase)
