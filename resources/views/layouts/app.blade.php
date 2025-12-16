@@ -819,7 +819,13 @@
             
             applyTheme(theme) {
                 const html = document.documentElement;
-                const effectiveTheme = ThemeService.getEffectiveTheme();
+                // Use passed theme or get effective theme if not provided
+                let effectiveTheme = theme;
+                if (theme === 'auto') {
+                    effectiveTheme = ThemeService.getSystemTheme();
+                }
+                
+                console.log('Applying theme:', theme, '-> effective:', effectiveTheme);
                 
                 html.setAttribute('data-bs-theme', effectiveTheme);
                 
@@ -855,9 +861,17 @@
                 document.querySelectorAll('[data-theme-option]').forEach(option => {
                     option.addEventListener('click', (e) => {
                         e.preventDefault();
+                        e.stopPropagation();
                         const theme = option.getAttribute('data-theme-option');
+                        console.log('Theme option clicked:', theme);
                         ThemeService.saveTheme(theme);
-                        this.applyTheme(theme);
+                        // Get effective theme for 'auto'
+                        const effectiveTheme = theme === 'auto' ? ThemeService.getSystemTheme() : theme;
+                        this.applyTheme(effectiveTheme);
+                        // Update checkmarks
+                        document.querySelectorAll('[data-theme-check]').forEach(check => {
+                            check.style.visibility = check.getAttribute('data-theme-check') === theme ? 'visible' : 'hidden';
+                        });
                     });
                 });
             }

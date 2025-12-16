@@ -247,6 +247,60 @@ The Laravel framework is open-sourced software licensed under the [MIT license](
 
 ---
 
+## Docker Daily Usage
+
+This project includes a convenient `docker-manage.sh` script for easy Docker management.
+
+### Quick Start
+
+```bash
+# First time setup - build and start
+./docker-manage.sh build
+./docker-manage.sh start
+```
+
+Access your app at **http://localhost:8080**
+
+### Daily Commands
+
+| Command | Description |
+|---------|-------------|
+| `./docker-manage.sh start` | Start the application |
+| `./docker-manage.sh stop` | Stop the application |
+| `./docker-manage.sh restart` | Restart the application |
+| `./docker-manage.sh logs` | Watch live logs (Ctrl+C to exit) |
+| `./docker-manage.sh status` | Check if container is running |
+
+### Troubleshooting Commands
+
+| Command | When to use |
+|---------|-------------|
+| `./docker-manage.sh fix-csrf` | Getting 419 errors on forms |
+| `./docker-manage.sh fix-db` | Database readonly errors |
+| `./docker-manage.sh fix-sqlite` | SQLite compatibility issues |
+| `./docker-manage.sh shell` | Run artisan commands or debug inside container |
+| `./docker-manage.sh db` | Open SQLite database directly |
+
+### After Code Changes
+
+```bash
+# If you changed PHP code only - just restart
+./docker-manage.sh restart
+
+# If you changed Dockerfile or dependencies - rebuild
+./docker-manage.sh rebuild
+```
+
+### Using Docker Compose (Alternative)
+
+```bash
+docker-compose up -d      # Start in background
+docker-compose down       # Stop
+docker-compose logs -f    # View logs
+```
+
+---
+
 ## Offline & Portable Deployment
 
 You can ship this application to a customer who has **no internet connection**.

@@ -31,6 +31,7 @@
 
 
     use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
     Auth::routes();
 
@@ -44,13 +45,26 @@
             ->name('raw-materials.purchase-history');
     });
 
-    // Language switcher
-    Route::get('lang/{locale}', function ($locale) {
+    // Language switcher - must be in web middleware group for session support
+    Route::middleware('web')->get('lang/{locale}', function ($locale) {
         if (! in_array($locale, ['en', 'mm'])) {
             abort(400);
         }
-        session(['locale' => $locale]);
-        return redirect()->back()->withCookie(cookie('locale', $locale, 60*24*365)); // 1 year
+        
+        session()->put('locale', $locale);
+        app()->setLocale($locale);
+        
+        // Get the previous URL or fallback to home
+        $previousUrl = url()->previous();
+        $appUrl = config('app.url');
+        
+        // Ensure we redirect to a valid URL within the app
+        if (empty($previousUrl) || $previousUrl === url()->current()) {
+            $previousUrl = '/';
+        }
+        
+        return redirect($previousUrl)
+            ->withCookie(cookie()->forever('locale', $locale));
     })->name('lang.switch');
 
 
@@ -266,7 +280,8 @@
         // Production Cost Routes
         Route::get('/production-costs/dashboard', [ProductionCostController::class, 'dashboard'])
             ->name('production-costs.dashboard');
-            Route::get('/production-cost', [ProductionCostController::class, 'index']);
+            Route::get('/production-cost', 
+            [ProductionCostController::class, 'index']);
         Route::get('/production-costs/{productionPlan}', [ProductionCostController::class, 'show'])
             ->name('production-costs.show');
         Route::post('/production-costs/{productionPlan}/update-actual', [ProductionCostController::class, 'updateActualCosts'])
@@ -288,7 +303,7 @@
 
 Route::get('/test', function() {
     try {
-        \DB::connection()->getPdo();
+        DB::connection()->getPdo();
         return "Database connected successfully!";
     } catch (\Exception $e) {
         return "Database connection failed: " . $e->getMessage();
