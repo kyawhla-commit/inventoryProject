@@ -980,11 +980,60 @@
             const navLinks = document.querySelectorAll('.nav-item-custom');
             navLinks.forEach(link => {
                 link.addEventListener('click', () => {
+                    // Save sidebar scroll position before navigation
+                    saveSidebarScrollPosition();
+                    
                     if (window.innerWidth < 992) {
                         setTimeout(closeMobileSidebar, 100);
                     }
                 });
             });
+            
+            // ===== SIDEBAR SCROLL POSITION PERSISTENCE =====
+            const SIDEBAR_SCROLL_KEY = 'sidebar_scroll_position';
+            
+            // Save sidebar scroll position
+            function saveSidebarScrollPosition() {
+                if (leftSidebar) {
+                    sessionStorage.setItem(SIDEBAR_SCROLL_KEY, leftSidebar.scrollTop);
+                }
+            }
+            
+            // Restore sidebar scroll position
+            function restoreSidebarScrollPosition() {
+                const savedPosition = sessionStorage.getItem(SIDEBAR_SCROLL_KEY);
+                if (savedPosition && leftSidebar) {
+                    leftSidebar.scrollTop = parseInt(savedPosition, 10);
+                }
+            }
+            
+            // Scroll active menu item into view (centered)
+            function scrollActiveItemIntoView() {
+                const activeItem = leftSidebar?.querySelector('.nav-item-custom.active');
+                if (activeItem && leftSidebar) {
+                    const savedPosition = sessionStorage.getItem(SIDEBAR_SCROLL_KEY);
+                    
+                    // If we have a saved position, use it; otherwise scroll to active item
+                    if (savedPosition) {
+                        restoreSidebarScrollPosition();
+                    } else {
+                        // Scroll active item into view with some offset from top
+                        const sidebarRect = leftSidebar.getBoundingClientRect();
+                        const itemRect = activeItem.getBoundingClientRect();
+                        const itemOffsetTop = activeItem.offsetTop;
+                        
+                        // Center the active item in the sidebar viewport
+                        const scrollTarget = itemOffsetTop - (sidebarRect.height / 2) + (itemRect.height / 2);
+                        leftSidebar.scrollTop = Math.max(0, scrollTarget);
+                    }
+                }
+            }
+            
+            // Save scroll position before page unload
+            window.addEventListener('beforeunload', saveSidebarScrollPosition);
+            
+            // Restore scroll position on page load
+            scrollActiveItemIntoView();
 
             // Close mobile sidebar on escape key
             document.addEventListener('keydown', function(e) {

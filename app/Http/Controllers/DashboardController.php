@@ -129,29 +129,27 @@ class DashboardController extends Controller
             return Carbon::now()->subMonths($i)->format('Y-m');
         })->reverse();
 
-        $salesPerMonth = Sale::selectRaw('DATE_FORMAT(sale_date, "%Y-%m") as ym, SUM(total_amount) as total')
-            ->whereBetween('sale_date', [Carbon::now()->subMonths(11)->startOfMonth(), Carbon::now()->endOfMonth()])
-            ->groupBy('ym')
-            ->pluck('total', 'ym');
+        $chartStartDate = Carbon::now()->subMonths(11)->startOfMonth();
+        $chartEndDate = Carbon::now()->endOfMonth();
 
         if (DB::connection()->getDriverName() === 'sqlite') {
             $salesPerMonth = Sale::selectRaw('strftime("%Y-%m", sale_date) as ym, SUM(total_amount) as total')
-                ->whereBetween('sale_date', [$startDate, $endDate])
+                ->whereBetween('sale_date', [$chartStartDate, $chartEndDate])
                 ->groupBy('ym')
                 ->pluck('total', 'ym');
 
             $purchasesPerMonth = Purchase::selectRaw('strftime("%Y-%m", purchase_date) as ym, SUM(total_amount) as total')
-                ->whereBetween('purchase_date', [$startDate, $endDate])
+                ->whereBetween('purchase_date', [$chartStartDate, $chartEndDate])
                 ->groupBy('ym')
                 ->pluck('total', 'ym');
         } else {
             $salesPerMonth = Sale::selectRaw('DATE_FORMAT(sale_date, "%Y-%m") as ym, SUM(total_amount) as total')
-                ->whereBetween('sale_date', [$startDate, $endDate])
+                ->whereBetween('sale_date', [$chartStartDate, $chartEndDate])
                 ->groupBy('ym')
                 ->pluck('total', 'ym');
 
             $purchasesPerMonth = Purchase::selectRaw('DATE_FORMAT(purchase_date, "%Y-%m") as ym, SUM(total_amount) as total')
-                ->whereBetween('purchase_date', [$startDate, $endDate])
+                ->whereBetween('purchase_date', [$chartStartDate, $chartEndDate])
                 ->groupBy('ym')
                 ->pluck('total', 'ym');
         }
