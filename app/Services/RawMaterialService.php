@@ -42,7 +42,6 @@ class RawMaterialService
                 'reorder_quantity' => $data['reorder_quantity'] ?? null,
                 'location' => $data['location'] ?? null,
                 'category' => $data['category'] ?? null,
-                'status' => $data['status'] ?? 'active',
             ]);
 
             // Record initial stock if quantity > 0
@@ -177,7 +176,7 @@ class RawMaterialService
      */
     public function getTotalStockValuation(): array
     {
-        $materials = RawMaterial::where('status', 'active')->get();
+        $materials = RawMaterial::all();
         
         $totalValue = $materials->sum(fn($m) => $m->quantity * $m->cost_per_unit);
         $totalItems = $materials->count();
@@ -256,8 +255,7 @@ class RawMaterialService
      */
     public function getMaterialsNeedingReorder(): \Illuminate\Database\Eloquent\Collection
     {
-        return RawMaterial::where('status', 'active')
-            ->whereColumn('quantity', '<=', 'minimum_stock_level')
+        return RawMaterial::whereColumn('quantity', '<=', 'minimum_stock_level')
             ->with('supplier')
             ->orderBy('quantity')
             ->get();
